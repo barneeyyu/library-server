@@ -4,6 +4,7 @@ import com.library.dto.ApiResponse;
 import com.library.dto.AuthResponse;
 import com.library.dto.LoginRequest;
 import com.library.dto.RegisterRequest;
+import com.library.exception.LibrarianVerificationException;
 import com.library.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,11 @@ public class AuthController {
             AuthResponse response = authService.register(request, authorization);
             return ResponseEntity.ok(ApiResponse.success("註冊成功", response));
             
+        } catch (LibrarianVerificationException e) {
+            log.warn("館員驗證失敗：{}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error(e.getMessage()));
+                    
         } catch (IllegalArgumentException e) {
             log.warn("註冊失敗：{}", e.getMessage());
             return ResponseEntity.badRequest()

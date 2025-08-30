@@ -10,18 +10,12 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/test")
 public class TestController {
-    
+
     @GetMapping("/health")
     public Map<String, Object> health() {
         return Map.of(
-            "status", "UP",
-            "timestamp", LocalDateTime.now(),
-            "service", "library-server"
-        );
-    }
-    
-    @GetMapping("/hello")
-    public Map<String, String> hello() {
-        return Map.of("message", "Hello from Library Server!");
+                "status", "UP",
+                "timestamp", LocalDateTime.now(),
+                "service", "library-server");
     }
 }

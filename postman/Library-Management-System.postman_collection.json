@@ -539,43 +539,6 @@
 						}
 					},
 					"response": []
-				},
-				{
-					"name": "Hello Test",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Hello 端點正常\", function () {",
-									"    pm.response.to.have.status(200);",
-									"});",
-									"",
-									"pm.test(\"回應訊息正確\", function () {",
-									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData.message).to.eql(\"Hello from Library Server!\");",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/test/hello",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"test",
-								"hello"
-							]
-						}
-					},
-					"response": []
 				}
 			]
 		}

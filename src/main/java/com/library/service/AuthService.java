@@ -4,6 +4,7 @@ import com.library.dto.AuthResponse;
 import com.library.dto.LoginRequest;
 import com.library.dto.RegisterRequest;
 import com.library.entity.User;
+import com.library.exception.LibrarianVerificationException;
 import com.library.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -119,11 +120,11 @@ public class AuthService {
      */
     private void validateLibrarianCredentials(String librarianToken) {
         if (librarianToken == null || librarianToken.trim().isEmpty()) {
-            throw new IllegalArgumentException("館員註冊需要提供驗證 token");
+            throw new LibrarianVerificationException("館員註冊需要提供 Authorization: todo header");
         }
         
         if (!externalVerificationService.verifyLibrarianCredentials(librarianToken)) {
-            throw new IllegalArgumentException("館員身份驗證失敗，請檢查驗證 token");
+            throw new LibrarianVerificationException("館員身份驗證失敗，請檢查驗證 token");
         }
     }
     
