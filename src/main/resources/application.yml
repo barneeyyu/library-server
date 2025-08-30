@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: library-server
+  
+  datasource:
+    url: jdbc:sqlite:./data/library.db
+    driver-class-name: org.sqlite.JDBC
+    username: 
+    password: 
+  
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        
+  security:
+    user:
+      name: admin
+      password: admin
+      roles: ADMIN
+
+server:
+  port: 8080
+
+logging:
+  level:
+    com.library: DEBUG
+    org.springframework.security: DEBUG
