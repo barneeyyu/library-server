@@ -14,8 +14,8 @@
 - **Lombok**: 減少樣板程式碼
 
 ### 資料庫
-- **SQLite**: 輕量級，適合開發和小型部署
-- **Hibernate Community Dialects**: SQLite 支援
+- **H2**: 輕量級嵌入式資料庫，Spring Boot 原生支援
+- **H2 Console**: 內建網頁管理界面
 
 ### 測試框架
 - **JUnit 5**: 單元測試框架
@@ -138,15 +138,22 @@ erDiagram
 **替代方案**: 在 Book 中直接存放館別和數量
 - **缺點**: 資料重複、搜尋複雜、維護困難
 
-### 2. SQLite vs H2
+### 2. H2 vs SQLite
 
-**決策**: 選擇 SQLite
+**決策**: 選擇 H2
 
 **理由**:
-- 檔案式資料庫，便於備份和遷移
-- 生產環境可直接使用
-- 支援並發讀取
-- 工具生態完善
+- Spring Boot 原生支援，配置簡單
+- 完整的 SQL 標準支援
+- 優秀的併發處理能力
+- 內建 H2 Console 管理界面
+- 支援 HikariCP 連線池
+- 適合 Web 應用開發
+
+**SQLite 的問題**:
+- 連線池相容性差
+- 併發寫入限制
+- Spring Boot 整合複雜
 
 ### 3. 認證機制
 
@@ -187,8 +194,9 @@ sequenceDiagram
 
 ### 資料庫最佳化
 
-1. **索引策略**
+1. **H2 索引策略**
    ```sql
+   -- H2 自動為主鍵和唯一約束建立索引
    CREATE INDEX idx_user_username ON users(username);
    CREATE INDEX idx_book_title ON books(title);
    CREATE INDEX idx_borrow_user_status ON borrow_records(user_id, status);
@@ -197,9 +205,14 @@ sequenceDiagram
 2. **查詢最佳化**
    - 使用 JPA 投影避免 N+1 查詢
    - 適當使用 `@BatchSize` 註解
-   - 關鍵查詢使用原生 SQL
+   - H2 支援完整 SQL 語法，關鍵查詢可使用原生 SQL
 
-3. **快取策略**
+3. **H2 特定配置**
+   - 檔案模式：`jdbc:h2:file:./data/library`
+   - 記憶體模式：`jdbc:h2:mem:library`（測試用）
+   - H2 Console：開發時的管理界面
+
+4. **快取策略**
    - 書籍資訊使用 `@Cacheable`
    - 用戶權限資訊快取
 
@@ -239,23 +252,10 @@ sequenceDiagram
 │ Spring Boot │
 │   (8080)    │
 ├─────────────┤
-│   SQLite    │
+│ H2 Database │
+│ + H2 Console│
 │ (./data/)   │
 └─────────────┘
-```
-
-### 生產環境建議
-```
-┌─────────────┐    ┌─────────────┐
-│ Load Balance│    │   Nginx     │
-│             │    │  (Static)   │
-├─────────────┤    ├─────────────┤
-│ Spring Boot │    │ Spring Boot │
-│  Instance 1 │    │ Instance 2  │
-├─────────────┤    ├─────────────┤
-│           SQLite Cluster        │
-│          (或 PostgreSQL)        │
-└─────────────────────────────────┘
 ```
 
 ## 監控與維運
@@ -271,31 +271,18 @@ sequenceDiagram
 - 敏感資訊遮罩
 
 ### 備份策略
-- SQLite 檔案定期備份
-- 交易日誌保留
+- H2 資料庫檔案定期備份
+- 定期匯出 SQL 腳本
 - 災難恢復計畫
-
-## 未來擴展
-
-### 短期計畫
-- [ ] 圖書推薦系統
-- [ ] 預約功能
-- [ ] 罰金計算
-
-### 長期計畫
-- [ ] 微服務架構重構
-- [ ] 多語言支援
-- [ ] 行動應用 API
-- [ ] 機器學習推薦引擎
 
 ## 技術債務
 
 ### 當前限制
-1. SQLite 並發寫入限制
-2. 單體架構擴展性
+1. H2 僅適合開發環境
+2. 單體架構擴展性限制
 3. 缺乏分散式快取
 
 ### 改善計畫
-1. 評估 PostgreSQL 遷移
+1. 生產環境遷移至 PostgreSQL/MySQL
 2. 準備微服務拆分方案
 3. 引入 Redis 快取層
