@@ -3,13 +3,18 @@ spring:
     name: library-server
   
   datasource:
-    url: jdbc:sqlite:./data/library.db
-    driver-class-name: org.sqlite.JDBC
-    username: 
-    password: 
+    url: jdbc:h2:file:./data/library
+    driver-class-name: org.h2.Driver
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
   
   jpa:
-    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: create-drop
     show-sql: true
@@ -19,12 +24,21 @@ spring:
         
   security:
     user:
-      name: admin
-      password: admin
+      name: ${ADMIN_USERNAME}
+      password: ${ADMIN_PASSWORD}
       roles: ADMIN
 
 server:
-  port: 8080
+  port: ${SERVER_PORT}
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION}
+
+library:
+  external:
+    verification:
+      url: ${EXTERNAL_VERIFICATION_URL}
 
 logging:
   level:
