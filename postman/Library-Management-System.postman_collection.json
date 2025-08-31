@@ -25,7 +25,7 @@
 									"    pm.expect(jsonData.success).to.be.true;",
 									"    pm.expect(jsonData.data.token).to.not.be.empty;",
 									"    // 儲存 token 供後續測試使用",
-									"    pm.globals.set(\"member_token\", jsonData.data.token);",
+									"    pm.collectionVariables.set(\"member_token\", jsonData.data.token);",
 									"});",
 									"",
 									"pm.test(\"用戶資訊正確\", function () {",
@@ -80,7 +80,7 @@
 									"    pm.expect(jsonData.success).to.be.true;",
 									"    pm.expect(jsonData.data.token).to.not.be.empty;",
 									"    // 儲存館員 token",
-									"    pm.globals.set(\"librarian_token\", jsonData.data.token);",
+									"    pm.collectionVariables.set(\"librarian_token\", jsonData.data.token);",
 									"});",
 									"",
 									"pm.test(\"館員資訊正確\", function () {",
@@ -238,7 +238,7 @@
 									"    pm.expect(jsonData.data.token).to.not.be.empty;",
 									"    pm.expect(jsonData.data.type).to.eql(\"Bearer\");",
 									"    // 更新 token",
-									"    pm.globals.set(\"member_token\", jsonData.data.token);",
+									"    pm.collectionVariables.set(\"member_token\", jsonData.data.token);",
 									"});",
 									"",
 									"pm.test(\"用戶資訊正確\", function () {",
@@ -293,7 +293,7 @@
 									"    pm.expect(jsonData.success).to.be.true;",
 									"    pm.expect(jsonData.data.token).to.not.be.empty;",
 									"    // 更新館員 token",
-									"    pm.globals.set(\"librarian_token\", jsonData.data.token);",
+									"    pm.collectionVariables.set(\"librarian_token\", jsonData.data.token);",
 									"});",
 									"",
 									"pm.test(\"館員資訊正確\", function () {",
@@ -541,6 +541,536 @@
 					"response": []
 				}
 			]
+		},
+		{
+			"name": "Books - 書籍管理",
+			"item": [
+				{
+					"name": "1. 新增書籍（館員）",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"書籍新增成功\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"回應包含書籍資訊\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.data.bookId).to.not.be.empty;",
+									"    pm.expect(jsonData.data.title).to.eql(\"Spring Boot 實戰\");",
+									"    pm.expect(jsonData.data.totalCopies).to.eql(5);",
+									"});",
+									"",
+									"pm.test(\"儲存書籍ID\", function () {",
+									"    try {",
+									"        var responseText = pm.response.text();",
+									"        console.log(\"完整回應內容:\", responseText);",
+									"        ",
+									"        var jsonData = pm.response.json();",
+									"        console.log(\"解析後的 JSON:\", JSON.stringify(jsonData, null, 2));",
+									"        ",
+									"        // 檢查回應狀態",
+									"        pm.expect(pm.response.code).to.equal(200);",
+									"        ",
+									"        // 檢查基本結構",
+									"        pm.expect(jsonData).to.have.property('success');",
+									"        pm.expect(jsonData).to.have.property('data');",
+									"        pm.expect(jsonData.success).to.be.true;",
+									"        ",
+									"        // 檢查 bookId",
+									"        pm.expect(jsonData.data).to.have.property('bookId');",
+									"        pm.expect(jsonData.data.bookId).to.not.be.null;",
+									"        pm.expect(jsonData.data.bookId).to.not.be.undefined;",
+									"        ",
+									"        var bookId = jsonData.data.bookId;",
+									"        console.log(\"提取到的 bookId:\", bookId, \"類型:\", typeof bookId);",
+									"        ",
+									"        // 設置變數",
+									"        pm.collectionVariables.set(\"test_book_id\", bookId.toString());",
+									"        ",
+									"        // 驗證設置成功",
+									"        var setBookId = pm.collectionVariables.get(\"test_book_id\");",
+									"        console.log(\"設置後的 test_book_id:\", setBookId);",
+									"        ",
+									"        pm.expect(setBookId).to.equal(bookId.toString());",
+									"        ",
+									"    } catch (error) {",
+									"        console.error(\"設置 test_book_id 時發生錯誤:\", error.message);",
+									"        console.error(\"錯誤堆疊:\", error.stack);",
+									"        pm.expect.fail(\"設置 test_book_id 失敗: \" + error.message);",
+									"    }",
+									"});",
+									"",
+									"pm.test(\"館藏資訊正確\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.libraryId).to.eql(1);",
+									"    pm.expect(jsonData.data.availableCopies).to.eql(5);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{librarian_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Spring Boot 實戰\",\n    \"author\": \"張三\",\n    \"publishYear\": 2023,\n    \"type\": \"BOOK\",\n    \"libraryId\": 1,\n    \"copies\": 5,\n    \"isbn\": \"978-986-123-456-7\",\n    \"publisher\": \"技術出版社\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/books",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"books"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. 新增書籍（會員 - 應該失敗）",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"會員無法新增書籍\", function () {",
+									"    pm.response.to.have.status(403);",
+									"});",
+									"",
+									"pm.test(\"錯誤訊息正確\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.false;",
+									"    pm.expect(jsonData.message).to.include(\"只有館員可以新增書籍\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{member_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Java 基礎\",\n    \"author\": \"李四\",\n    \"publishYear\": 2022,\n    \"type\": \"BOOK\",\n    \"libraryId\": 1,\n    \"copies\": 3\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/books",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"books"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3. 新增相同書籍到不同圖書館",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"相同書籍可新增到不同圖書館\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"使用現有書籍記錄\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.data.title).to.eql(\"Spring Boot 實戰\");",
+									"    pm.expect(jsonData.data.libraryId).to.eql(2);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{librarian_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Spring Boot 實戰\",\n    \"author\": \"張三\",\n    \"publishYear\": 2023,\n    \"type\": \"BOOK\",\n    \"libraryId\": 2,\n    \"copies\": 3\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/books",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"books"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "4. 新增書籍到不存在的圖書館",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"不存在的圖書館應該失敗\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"錯誤訊息正確\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.false;",
+									"    pm.expect(jsonData.message).to.include(\"圖書館不存在\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{librarian_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Python 程式設計\",\n    \"author\": \"王五\",\n    \"publishYear\": 2023,\n    \"type\": \"BOOK\",\n    \"libraryId\": 999,\n    \"copies\": 2\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/books",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"books"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "5. 搜尋書籍（依書名）",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"搜尋成功\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"找到書籍\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.data).to.be.an('array');",
+									"    pm.expect(jsonData.data.length).to.be.at.least(1);",
+									"});",
+									"",
+									"pm.test(\"書籍資訊完整\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var book = jsonData.data[0];",
+									"    pm.expect(book.title).to.include('Spring');",
+									"    pm.expect(book.libraries).to.be.an('array');",
+									"    pm.expect(book.libraries.length).to.be.at.least(1);",
+									"});",
+									"",
+									"pm.test(\"館藏資訊正確\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var book = jsonData.data[0];",
+									"    var library = book.libraries[0];",
+									"    pm.expect(library.libraryName).to.not.be.empty;",
+									"    pm.expect(library.totalCopies).to.be.above(0);",
+									"    pm.expect(library.availableCopies).to.be.at.least(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/books/search?title=Spring",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"books",
+								"search"
+							],
+							"query": [
+								{
+									"key": "title",
+									"value": "Spring"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "6. 搜尋書籍（依作者）",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"依作者搜尋成功\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"搜尋結果正確\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    if (jsonData.data.length > 0) {",
+									"        pm.expect(jsonData.data[0].author).to.include('張');",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/books/search?author=張",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"books",
+								"search"
+							],
+							"query": [
+								{
+									"key": "author",
+									"value": "張"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "7. 搜尋書籍（組合條件）",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"組合搜尋成功\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"搜尋結果符合條件\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    if (jsonData.data.length > 0) {",
+									"        var book = jsonData.data[0];",
+									"        pm.expect(book.title).to.include('Spring');",
+									"        pm.expect(book.author).to.include('張');",
+									"        pm.expect(book.publishYear).to.eql(2023);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/books/search?title=Spring&author=張&year=2023",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"books",
+								"search"
+							],
+							"query": [
+								{
+									"key": "title",
+									"value": "Spring"
+								},
+								{
+									"key": "author",
+									"value": "張"
+								},
+								{
+									"key": "year",
+									"value": "2023"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "8. 搜尋書籍（無條件 - 應該失敗）",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"無搜尋條件應該失敗\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"錯誤訊息正確\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.false;",
+									"    pm.expect(jsonData.message).to.include(\"請至少提供一個搜尋條件\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/books/search",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"books",
+								"search"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "9. 取得書籍詳情",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"取得書籍詳情成功\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"書籍詳情完整\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.data.id).to.not.be.empty;",
+									"    pm.expect(jsonData.data.title).to.not.be.empty;",
+									"    pm.expect(jsonData.data.author).to.not.be.empty;",
+									"    pm.expect(jsonData.data.libraries).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/books/{{test_book_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"books",
+								"{{test_book_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "10. 取得不存在書籍",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"不存在的書籍應該返回 404\", function () {",
+									"    pm.response.to.have.status(404);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/books/99999",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"books",
+								"99999"
+							]
+						}
+					},
+					"response": []
+				}
+			]
 		}
 	],
 	"event": [
@@ -567,6 +1097,21 @@
 		{
 			"key": "base_url",
 			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "member_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "librarian_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "test_book_id",
+			"value": "",
 			"type": "string"
 		}
 	]

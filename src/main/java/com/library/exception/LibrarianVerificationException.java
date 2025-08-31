@@ -2,7 +2,7 @@ package com.library.exception;
 
 /**
  * 館員身份驗證失敗異常
- * 當館員驗證失敗時拋出，應該返回 403 Forbidden
+ * 當外部系統館員驗證失敗時拋出，應該返回 403 Forbidden
  */
 public class LibrarianVerificationException extends RuntimeException {
     
