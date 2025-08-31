@@ -21,13 +21,7 @@
    ```
 
 2. **設定環境變數**
-   ```bash
-   # 複製環境變數範例檔案
-   cp .env.example .env
-   
-   # 編輯 .env 檔案，修改敏感參數（如 JWT_SECRET）
-   nano .env
-   ```
+   把信中附件的 `.env` 檔案放到專案根目錄，並根據需求修改內容。
 
 3. **編譯專案**
    ```bash
@@ -77,7 +71,7 @@ mvn verify
 ```bash
 mvn jacoco:report
 ```
-
+執行後，報告位於 `target/site/jacoco/index.html`。
 目標測試覆蓋率：> 80%
 
 ## 開發工具設定
