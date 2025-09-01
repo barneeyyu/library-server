@@ -23,14 +23,6 @@ public class CreateBookRequest {
     @NotNull(message = "書籍類型不能為空")
     private Book.BookType type;
     
-    @NotNull(message = "圖書館ID不能為空")
-    private Long libraryId;
-    
-    @NotNull(message = "副本數量不能為空")
-    @Min(value = 1, message = "副本數量至少為1")
-    @Max(value = 999, message = "副本數量不能超過999")
-    private Integer copies;
-    
     @Size(max = 20, message = "ISBN長度不能超過20字符")
     private String isbn;
     

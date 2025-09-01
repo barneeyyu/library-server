@@ -1,5 +1,6 @@
 package com.library.service;
 
+import com.library.dto.AddBookCopyResponse;
 import com.library.dto.BookSearchResponse;
 import com.library.dto.CreateBookRequest;
 import com.library.dto.CreateBookResponse;
@@ -89,8 +90,6 @@ class BookServiceTest {
                 createBookRequest.setType(Book.BookType.BOOK);
                 createBookRequest.setIsbn("978-1234567890");
                 createBookRequest.setPublisher("技術出版社");
-                createBookRequest.setLibraryId(1L);
-                createBookRequest.setCopies(5);
 
                 // 準備書籍數據
                 existingBook = new Book();
@@ -116,11 +115,9 @@ class BookServiceTest {
         @DisplayName("館員成功新增書籍 - 新書籍")
         void createBook_NewBook_Success() {
                 // Given
-                when(libraryRepository.findById(1L)).thenReturn(Optional.of(activeLibrary));
                 when(bookRepository.findByTitleAndAuthorAndPublishYear("Java程式設計", "張三", 2023))
                                 .thenReturn(Optional.empty());
                 when(bookRepository.save(any(Book.class))).thenReturn(existingBook);
-                when(bookCopyRepository.save(any(BookCopy.class))).thenReturn(bookCopy);
 
                 // When
                 CreateBookResponse response = bookService.createBook(createBookRequest, librarianUser);
@@ -130,40 +127,31 @@ class BookServiceTest {
                 assertThat(response.getBookId()).isEqualTo(1L);
                 assertThat(response.getTitle()).isEqualTo("Java程式設計");
                 assertThat(response.getAuthor()).isEqualTo("張三");
-                assertThat(response.getLibraryId()).isEqualTo(1L);
-                assertThat(response.getLibraryName()).isEqualTo("中央圖書館");
-                assertThat(response.getTotalCopies()).isEqualTo(5);
-                assertThat(response.getAvailableCopies()).isEqualTo(5);
+                assertThat(response.getPublishYear()).isEqualTo(2023);
+                assertThat(response.getType()).isEqualTo(Book.BookType.BOOK);
+                assertThat(response.getIsbn()).isEqualTo("978-1234567890");
+                assertThat(response.getPublisher()).isEqualTo("技術出版社");
 
-                verify(libraryRepository).findById(1L);
                 verify(bookRepository).findByTitleAndAuthorAndPublishYear("Java程式設計", "張三", 2023);
                 verify(bookRepository).save(any(Book.class));
-                verify(bookCopyRepository).save(any(BookCopy.class));
+                verify(libraryRepository, never()).findById(anyLong());
+                verify(bookCopyRepository, never()).save(any(BookCopy.class));
         }
 
         @Test
-        @DisplayName("館員成功新增書籍 - 現有書籍新增到其他圖書館")
-        void createBook_ExistingBookNewLibrary_Success() {
+        @DisplayName("新增書籍失敗：書籍已存在")
+        void createBook_BookAlreadyExists_ThrowsException() {
                 // Given
-                when(libraryRepository.findById(1L)).thenReturn(Optional.of(activeLibrary));
                 when(bookRepository.findByTitleAndAuthorAndPublishYear("Java程式設計", "張三", 2023))
                                 .thenReturn(Optional.of(existingBook));
-                when(bookCopyRepository.existsByBookAndLibrary(existingBook, activeLibrary)).thenReturn(false);
-                when(bookCopyRepository.save(any(BookCopy.class))).thenReturn(bookCopy);
 
-                // When
-                CreateBookResponse response = bookService.createBook(createBookRequest, librarianUser);
+                // When & Then
+                assertThatThrownBy(() -> bookService.createBook(createBookRequest, librarianUser))
+                                .isInstanceOf(IllegalArgumentException.class)
+                                .hasMessage("書籍已存在：《Java程式設計》- 張三 (2023)");
 
-                // Then
-                assertThat(response).isNotNull();
-                assertThat(response.getBookId()).isEqualTo(1L);
-                assertThat(response.getTitle()).isEqualTo("Java程式設計");
-
-                verify(libraryRepository).findById(1L);
                 verify(bookRepository).findByTitleAndAuthorAndPublishYear("Java程式設計", "張三", 2023);
-                verify(bookCopyRepository).existsByBookAndLibrary(existingBook, activeLibrary);
-                verify(bookRepository, never()).save(any(Book.class)); // 不應該保存新書籍
-                verify(bookCopyRepository).save(any(BookCopy.class));
+                verify(bookRepository, never()).save(any(Book.class));
         }
 
         @Test
@@ -178,56 +166,6 @@ class BookServiceTest {
                 verify(bookRepository, never()).save(any(Book.class));
         }
 
-        @Test
-        @DisplayName("新增書籍失敗：圖書館不存在")
-        void createBook_LibraryNotFound_ThrowsException() {
-                // Given
-                when(libraryRepository.findById(1L)).thenReturn(Optional.empty());
-
-                // When & Then
-                assertThatThrownBy(() -> bookService.createBook(createBookRequest, librarianUser))
-                                .isInstanceOf(IllegalArgumentException.class)
-                                .hasMessage("圖書館不存在：ID 1");
-
-                verify(libraryRepository).findById(1L);
-                verify(bookRepository, never()).save(any(Book.class));
-        }
-
-        @Test
-        @DisplayName("新增書籍失敗：圖書館已停用")
-        void createBook_InactiveLibrary_ThrowsException() {
-                // Given
-                when(libraryRepository.findById(2L)).thenReturn(Optional.of(inactiveLibrary));
-                createBookRequest.setLibraryId(2L);
-
-                // When & Then
-                assertThatThrownBy(() -> bookService.createBook(createBookRequest, librarianUser))
-                                .isInstanceOf(IllegalArgumentException.class)
-                                .hasMessage("圖書館已停用，無法新增書籍");
-
-                verify(libraryRepository).findById(2L);
-                verify(bookRepository, never()).save(any(Book.class));
-        }
-
-        @Test
-        @DisplayName("新增書籍失敗：該圖書館已有此書籍")
-        void createBook_BookExistsInLibrary_ThrowsException() {
-                // Given
-                when(libraryRepository.findById(1L)).thenReturn(Optional.of(activeLibrary));
-                when(bookRepository.findByTitleAndAuthorAndPublishYear("Java程式設計", "張三", 2023))
-                                .thenReturn(Optional.of(existingBook));
-                when(bookCopyRepository.existsByBookAndLibrary(existingBook, activeLibrary)).thenReturn(true);
-
-                // When & Then
-                assertThatThrownBy(() -> bookService.createBook(createBookRequest, librarianUser))
-                                .isInstanceOf(IllegalArgumentException.class)
-                                .hasMessage("該圖書館已有此書籍館藏，請使用更新功能增加副本數量");
-
-                verify(libraryRepository).findById(1L);
-                verify(bookRepository).findByTitleAndAuthorAndPublishYear("Java程式設計", "張三", 2023);
-                verify(bookCopyRepository).existsByBookAndLibrary(existingBook, activeLibrary);
-                verify(bookCopyRepository, never()).save(any(BookCopy.class));
-        }
 
         @Test
         @DisplayName("根據ID獲取書籍成功")

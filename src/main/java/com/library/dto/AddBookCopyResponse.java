@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateBookResponse {
+public class AddBookCopyResponse {
     
     private Long bookId;
     private String title;
@@ -17,4 +17,8 @@ public class CreateBookResponse {
     private Book.BookType type;
     private String isbn;
     private String publisher;
+    private Long libraryId;
+    private String libraryName;
+    private Integer totalCopies;
+    private Integer availableCopies;
 }

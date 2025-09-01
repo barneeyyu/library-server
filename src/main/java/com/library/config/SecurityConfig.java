@@ -31,7 +31,6 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers(new AntPathRequestMatcher("/api/test/**")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/api/auth/register")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/api/auth/login")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/api/books/search")).permitAll()

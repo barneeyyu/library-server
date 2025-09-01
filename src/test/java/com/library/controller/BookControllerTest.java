@@ -1,6 +1,7 @@
 package com.library.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.library.dto.AddBookCopyResponse;
 import com.library.dto.BookSearchResponse;
 import com.library.dto.CreateBookRequest;
 import com.library.dto.CreateBookResponse;
@@ -75,13 +76,11 @@ class BookControllerTest {
                 createBookRequest.setType(Book.BookType.BOOK);
                 createBookRequest.setIsbn("978-1234567890");
                 createBookRequest.setPublisher("技術出版社");
-                createBookRequest.setLibraryId(1L);
-                createBookRequest.setCopies(5);
 
                 // 準備創建書籍回應
                 createBookResponse = new CreateBookResponse(
                                 1L, "Java程式設計", "張三", 2023, Book.BookType.BOOK,
-                                "978-1234567890", "技術出版社", 1L, "中央圖書館", 5, 5);
+                                "978-1234567890", "技術出版社");
 
                 // 準備書籍搜尋回應
                 bookSearchResponse = new BookSearchResponse();
@@ -117,7 +116,9 @@ class BookControllerTest {
                                 .andExpect(jsonPath("$.data.bookId").value(1L))
                                 .andExpect(jsonPath("$.data.title").value("Java程式設計"))
                                 .andExpect(jsonPath("$.data.author").value("張三"))
-                                .andExpect(jsonPath("$.data.libraryName").value("中央圖書館"));
+                                .andExpect(jsonPath("$.data.publishYear").value(2023))
+                                .andExpect(jsonPath("$.data.isbn").value("978-1234567890"))
+                                .andExpect(jsonPath("$.data.publisher").value("技術出版社"));
 
                 verify(userRepository).findByUsername("librarian");
                 verify(bookService).createBook(any(CreateBookRequest.class), eq(librarianUser));
@@ -163,13 +164,13 @@ class BookControllerTest {
         }
 
         @Test
-        @DisplayName("新增書籍失敗：圖書館不存在")
+        @DisplayName("新增書籍失敗：書籍已存在")
         @WithMockUser(username = "librarian")
-        void createBook_LibraryNotFound() throws Exception {
+        void createBook_BookAlreadyExists() throws Exception {
                 // Given
                 when(userRepository.findByUsername("librarian")).thenReturn(Optional.of(librarianUser));
                 when(bookService.createBook(any(CreateBookRequest.class), eq(librarianUser)))
-                                .thenThrow(new IllegalArgumentException("圖書館不存在：ID 999"));
+                                .thenThrow(new IllegalArgumentException("書籍已存在：《Java程式設計》- 張三 (2023)"));
 
                 // When & Then
                 mockMvc.perform(post("/api/books")
@@ -177,7 +178,7 @@ class BookControllerTest {
                                 .content(objectMapper.writeValueAsString(createBookRequest)))
                                 .andExpect(status().isBadRequest())
                                 .andExpect(jsonPath("$.success").value(false))
-                                .andExpect(jsonPath("$.message").value("圖書館不存在：ID 999"));
+                                .andExpect(jsonPath("$.message").value("書籍已存在：《Java程式設計》- 張三 (2023)"));
 
                 verify(userRepository).findByUsername("librarian");
                 verify(bookService).createBook(any(CreateBookRequest.class), eq(librarianUser));

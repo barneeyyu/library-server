@@ -1,5 +1,7 @@
 package com.library.service;
 
+import com.library.dto.AddBookCopyRequest;
+import com.library.dto.AddBookCopyResponse;
 import com.library.dto.BookSearchResponse;
 import com.library.dto.CreateBookRequest;
 import com.library.dto.CreateBookResponse;
@@ -34,6 +36,7 @@ public class BookService {
     
     /**
      * 新增書籍至系統（館員專用）
+     * 只創建書籍基本資訊，不涉及圖書館副本
      */
     @Transactional
     public CreateBookResponse createBook(CreateBookRequest request, User librarian) {
@@ -44,43 +47,78 @@ public class BookService {
             throw new InsufficientPermissionException("只有館員可以新增書籍");
         }
         
-        // 驗證圖書館是否存在
-        Library library = libraryRepository.findById(request.getLibraryId())
-                .orElseThrow(() -> new IllegalArgumentException("圖書館不存在：ID " + request.getLibraryId()));
-        
-        if (!library.getActive()) {
-            throw new IllegalArgumentException("圖書館已停用，無法新增書籍");
-        }
-        
         // 檢查是否已存在相同書籍
         Book existingBook = bookRepository.findByTitleAndAuthorAndPublishYear(
                 request.getTitle(), request.getAuthor(), request.getPublishYear())
                 .orElse(null);
         
-        Book book;
         if (existingBook != null) {
-            // 書籍已存在，檢查該圖書館是否已有此書
-            boolean hasExistingCopy = bookCopyRepository.existsByBookAndLibrary(existingBook, library);
-            if (hasExistingCopy) {
-                throw new IllegalArgumentException("該圖書館已有此書籍館藏，請使用更新功能增加副本數量");
-            }
-            book = existingBook;
-            log.info("使用現有書籍記錄：{}", book.getId());
-        } else {
-            // 創建新書籍
-            book = createNewBook(request);
-            book = bookRepository.save(book);
-            log.info("創建新書籍：{}", book.getId());
+            throw new IllegalArgumentException("書籍已存在：《" + request.getTitle() + "》- " + request.getAuthor() + " (" + request.getPublishYear() + ")");
         }
         
-        // 創建書籍副本記錄
-        BookCopy bookCopy = createBookCopy(book, library, request.getCopies());
-        bookCopy = bookCopyRepository.save(bookCopy);
+        // 創建新書籍
+        Book book = createNewBook(request);
+        book = bookRepository.save(book);
         
-        log.info("新增書籍副本成功：書籍ID={}, 圖書館ID={}, 副本數={}", 
-                book.getId(), library.getId(), request.getCopies());
+        log.info("創建新書籍成功：ID={}, 書名={}", book.getId(), book.getTitle());
         
         return new CreateBookResponse(
+                book.getId(),
+                book.getTitle(),
+                book.getAuthor(),
+                book.getPublishYear(),
+                book.getType(),
+                book.getIsbn(),
+                book.getPublisher()
+        );
+    }
+    
+    /**
+     * 新增現有書籍副本到不同圖書館（館員專用）
+     */
+    @Transactional
+    public AddBookCopyResponse addBookCopies(AddBookCopyRequest request, User librarian) {
+        log.info("館員 {} 新增書籍副本：bookId={}, libraryId={}, copies={}", 
+                librarian.getUsername(), request.getBookId(), request.getLibraryId(), request.getCopies());
+        
+        // 驗證館員權限
+        if (librarian.getRole() != User.UserRole.LIBRARIAN) {
+            throw new InsufficientPermissionException("只有館員可以新增書籍副本");
+        }
+        
+        // 驗證書籍是否存在
+        Book book = bookRepository.findById(request.getBookId())
+                .orElseThrow(() -> new IllegalArgumentException("書籍不存在：ID " + request.getBookId()));
+        
+        // 驗證圖書館是否存在
+        Library library = libraryRepository.findById(request.getLibraryId())
+                .orElseThrow(() -> new IllegalArgumentException("圖書館不存在：ID " + request.getLibraryId()));
+        
+        if (!library.getActive()) {
+            throw new IllegalArgumentException("圖書館已停用，無法新增書籍副本");
+        }
+        
+        // 檢查該圖書館是否已有此書籍的副本
+        BookCopy existingCopy = bookCopyRepository.findByBookAndLibrary(book, library)
+                .orElse(null);
+        
+        BookCopy bookCopy;
+        if (existingCopy != null) {
+            // 如果已存在副本，增加數量
+            existingCopy.setTotalCopies(existingCopy.getTotalCopies() + request.getCopies());
+            existingCopy.setAvailableCopies(existingCopy.getAvailableCopies() + request.getCopies());
+            bookCopy = bookCopyRepository.save(existingCopy);
+            log.info("更新現有書籍副本：總數={}, 可借={}", 
+                    bookCopy.getTotalCopies(), bookCopy.getAvailableCopies());
+        } else {
+            // 如果沒有副本，創建新的副本記錄
+            bookCopy = createBookCopy(book, library, request.getCopies());
+            bookCopy = bookCopyRepository.save(bookCopy);
+            log.info("創建新書籍副本：書籍ID={}, 圖書館ID={}, 副本數={}", 
+                    book.getId(), library.getId(), request.getCopies());
+        }
+        
+        return new AddBookCopyResponse(
                 book.getId(),
                 book.getTitle(),
                 book.getAuthor(),

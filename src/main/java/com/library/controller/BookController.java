@@ -1,5 +1,7 @@
 package com.library.controller;
 
+import com.library.dto.AddBookCopyRequest;
+import com.library.dto.AddBookCopyResponse;
 import com.library.dto.ApiResponse;
 import com.library.dto.BookSearchResponse;
 import com.library.dto.CreateBookRequest;
@@ -58,6 +60,37 @@ public class BookController {
             log.error("書籍新增過程中發生錯誤", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("書籍新增失敗，請稍後再試"));
+        }
+    }
+
+    /**
+     * 新增現有書籍副本到不同圖書館（館員專用）
+     */
+    @PostMapping("/copies")
+    public ResponseEntity<ApiResponse<AddBookCopyResponse>> addBookCopies(
+            @Valid @RequestBody AddBookCopyRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        try {
+            // 獲取當前用戶資訊
+            User currentUser = getCurrentUser(userDetails);
+
+            AddBookCopyResponse response = bookService.addBookCopies(request, currentUser);
+            return ResponseEntity.ok(ApiResponse.success("書籍副本新增成功", response));
+
+        } catch (InsufficientPermissionException e) {
+            log.warn("權限不足：{}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error(e.getMessage()));
+
+        } catch (IllegalArgumentException e) {
+            log.warn("書籍副本新增失敗：{}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error(e.getMessage()));
+
+        } catch (Exception e) {
+            log.error("書籍副本新增過程中發生錯誤", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("書籍副本新增失敗，請稍後再試"));
         }
     }
 
