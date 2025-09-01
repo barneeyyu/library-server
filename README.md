@@ -33,16 +33,10 @@
    mvn spring-boot:run
    ```
 
-4. **測試連線**
-   ```bash
-   curl http://localhost:8080/api/test/health
-   ```
-
 ## 使用說明
 
-### 測試端點
-- `GET /api/test/health` - 健康檢查
-- `GET /api/test/hello` - 簡單測試
+### API 端點
+//TODO: 補充 API 端點說明
 
 ### 資料庫
 - **H2 資料庫**位於 `./data/library.mv.db`

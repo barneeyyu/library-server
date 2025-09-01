@@ -402,12 +402,17 @@
 					],
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{member_token}}"
-							}
-						],
+						"header": [],
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{member_token}}",
+									"type": "string"
+								}
+							]
+						},
 						"url": {
 							"raw": "{{base_url}}/api/auth/me",
 							"host": [
@@ -445,12 +450,17 @@
 					],
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{librarian_token}}"
-							}
-						],
+						"header": [],
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{librarian_token}}",
+									"type": "string"
+								}
+							]
+						},
 						"url": {
 							"raw": "{{base_url}}/api/auth/me",
 							"host": [
@@ -500,49 +510,6 @@
 			]
 		},
 		{
-			"name": "System - 系統測試",
-			"item": [
-				{
-					"name": "Health Check",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"系統運行正常\", function () {",
-									"    pm.response.to.have.status(200);",
-									"});",
-									"",
-									"pm.test(\"健康狀態正確\", function () {",
-									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData.status).to.eql(\"UP\");",
-									"    pm.expect(jsonData.service).to.eql(\"library-server\");",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/test/health",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"test",
-								"health"
-							]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
 			"name": "Books - 書籍管理",
 			"item": [
 				{
@@ -561,7 +528,8 @@
 									"    pm.expect(jsonData.success).to.be.true;",
 									"    pm.expect(jsonData.data.bookId).to.not.be.empty;",
 									"    pm.expect(jsonData.data.title).to.eql(\"Spring Boot 實戰\");",
-									"    pm.expect(jsonData.data.totalCopies).to.eql(5);",
+									"    pm.expect(jsonData.data.author).to.eql(\"張三\");",
+									"    pm.expect(jsonData.data.publishYear).to.eql(2023);",
 									"});",
 									"",
 									"pm.test(\"儲存書籍ID\", function () {",
@@ -602,12 +570,6 @@
 									"        console.error(\"錯誤堆疊:\", error.stack);",
 									"        pm.expect.fail(\"設置 test_book_id 失敗: \" + error.message);",
 									"    }",
-									"});",
-									"",
-									"pm.test(\"館藏資訊正確\", function () {",
-									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData.data.libraryId).to.eql(1);",
-									"    pm.expect(jsonData.data.availableCopies).to.eql(5);",
 									"});"
 								],
 								"type": "text/javascript"
@@ -620,15 +582,21 @@
 							{
 								"key": "Content-Type",
 								"value": "application/json"
-							},
-							{
-								"key": "Authorization",
-								"value": "Bearer {{librarian_token}}"
 							}
 						],
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{librarian_token}}",
+									"type": "string"
+								}
+							]
+						},
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"title\": \"Spring Boot 實戰\",\n    \"author\": \"張三\",\n    \"publishYear\": 2023,\n    \"type\": \"BOOK\",\n    \"libraryId\": 1,\n    \"copies\": 5,\n    \"isbn\": \"978-986-123-456-7\",\n    \"publisher\": \"技術出版社\"\n}"
+							"raw": "{\n    \"title\": \"Spring Boot 實戰\",\n    \"author\": \"張三\",\n    \"publishYear\": 2023,\n    \"type\": \"BOOK\",\n    \"isbn\": \"978-986-123-456-7\",\n    \"publisher\": \"技術出版社\"\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/books",
@@ -670,15 +638,21 @@
 							{
 								"key": "Content-Type",
 								"value": "application/json"
-							},
-							{
-								"key": "Authorization",
-								"value": "Bearer {{member_token}}"
 							}
 						],
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{member_token}}",
+									"type": "string"
+								}
+							]
+						},
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"title\": \"Java 基礎\",\n    \"author\": \"李四\",\n    \"publishYear\": 2022,\n    \"type\": \"BOOK\",\n    \"libraryId\": 1,\n    \"copies\": 3\n}"
+							"raw": "{\n    \"title\": \"Java 基礎\",\n    \"author\": \"李四\",\n    \"publishYear\": 2022,\n    \"type\": \"BOOK\",\n    \"isbn\": \"978-986-123-456-8\",\n    \"publisher\": \"程式出版社\"\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/books",
@@ -694,21 +668,34 @@
 					"response": []
 				},
 				{
-					"name": "3. 新增相同書籍到不同圖書館",
+					"name": "3. 新增書籍副本到圖書館",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"相同書籍可新增到不同圖書館\", function () {",
+									"pm.test(\"新增書籍副本成功\", function () {",
 									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"回應包含副本資訊\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.data.bookId).to.not.be.empty;",
+									"    pm.expect(jsonData.data.title).to.eql(\"Spring Boot 實戰\");",
+									"    pm.expect(jsonData.data.libraryId).to.eql(1);",
+									"    pm.expect(jsonData.data.totalCopies).to.eql(5);",
+									"    pm.expect(jsonData.data.availableCopies).to.eql(5);",
 									"});",
 									"",
 									"pm.test(\"使用現有書籍記錄\", function () {",
 									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData.success).to.be.true;",
-									"    pm.expect(jsonData.data.title).to.eql(\"Spring Boot 實戰\");",
-									"    pm.expect(jsonData.data.libraryId).to.eql(2);",
+									"    pm.expect(jsonData.data.bookId).to.eql(parseInt(pm.collectionVariables.get(\"test_book_id\")));",
+									"});",
+									"",
+									"pm.test(\"設置 book copy ID\", function () {",
+									"    // 假設第一個圖書館的第一個副本ID為1，用於後續借閱測試",
+									"    pm.collectionVariables.set(\"test_book_copy_id\", \"1\");",
 									"});"
 								],
 								"type": "text/javascript"
@@ -721,44 +708,51 @@
 							{
 								"key": "Content-Type",
 								"value": "application/json"
-							},
-							{
-								"key": "Authorization",
-								"value": "Bearer {{librarian_token}}"
 							}
 						],
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{librarian_token}}",
+									"type": "string"
+								}
+							]
+						},
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"title\": \"Spring Boot 實戰\",\n    \"author\": \"張三\",\n    \"publishYear\": 2023,\n    \"type\": \"BOOK\",\n    \"libraryId\": 2,\n    \"copies\": 3\n}"
+							"raw": "{\n    \"bookId\": {{test_book_id}},\n    \"libraryId\": 1,\n    \"copies\": 5\n}"
 						},
 						"url": {
-							"raw": "{{base_url}}/api/books",
+							"raw": "{{base_url}}/api/books/copies",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
-								"books"
+								"books",
+								"copies"
 							]
 						}
 					},
 					"response": []
 				},
 				{
-					"name": "4. 新增書籍到不存在的圖書館",
+					"name": "4. 新增重複書籍（應該失敗）",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"不存在的圖書館應該失敗\", function () {",
+									"pm.test(\"重複書籍應該失敗\", function () {",
 									"    pm.response.to.have.status(400);",
 									"});",
 									"",
 									"pm.test(\"錯誤訊息正確\", function () {",
 									"    var jsonData = pm.response.json();",
 									"    pm.expect(jsonData.success).to.be.false;",
-									"    pm.expect(jsonData.message).to.include(\"圖書館不存在\");",
+									"    pm.expect(jsonData.message).to.include(\"書籍已存在\");",
 									"});"
 								],
 								"type": "text/javascript"
@@ -771,15 +765,21 @@
 							{
 								"key": "Content-Type",
 								"value": "application/json"
-							},
-							{
-								"key": "Authorization",
-								"value": "Bearer {{librarian_token}}"
 							}
 						],
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{librarian_token}}",
+									"type": "string"
+								}
+							]
+						},
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"title\": \"Python 程式設計\",\n    \"author\": \"王五\",\n    \"publishYear\": 2023,\n    \"type\": \"BOOK\",\n    \"libraryId\": 999,\n    \"copies\": 2\n}"
+							"raw": "{\n    \"title\": \"Spring Boot 實戰\",\n    \"author\": \"張三\",\n    \"publishYear\": 2023,\n    \"type\": \"BOOK\",\n    \"isbn\": \"978-986-123-456-7\",\n    \"publisher\": \"技術出版社\"\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/books",
@@ -1071,6 +1071,774 @@
 					"response": []
 				}
 			]
+		},
+		{
+			"name": "Borrow - 借閱與還書",
+			"item": [
+				{
+					"name": "1. 會員借書（成功）",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"借書成功\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"回應包含借閱記錄\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.data.borrowRecordId).to.not.be.empty;",
+									"    pm.expect(jsonData.data.bookTitle).to.not.be.empty;",
+									"    pm.expect(jsonData.data.status).to.eql(\"BORROWED\");",
+									"});",
+									"",
+									"pm.test(\"儲存借閱記錄ID\", function () {",
+									"    try {",
+									"        var responseText = pm.response.text();",
+									"        console.log(\"借書回應內容:\", responseText);",
+									"        ",
+									"        var jsonData = pm.response.json();",
+									"        console.log(\"解析後的借書 JSON:\", JSON.stringify(jsonData, null, 2));",
+									"        ",
+									"        // 檢查回應狀態",
+									"        pm.expect(pm.response.code).to.equal(200);",
+									"        ",
+									"        // 檢查基本結構",
+									"        pm.expect(jsonData).to.have.property('success');",
+									"        pm.expect(jsonData).to.have.property('data');",
+									"        pm.expect(jsonData.success).to.be.true;",
+									"        ",
+									"        // 檢查 borrowRecordId",
+									"        pm.expect(jsonData.data).to.have.property('borrowRecordId');",
+									"        pm.expect(jsonData.data.borrowRecordId).to.not.be.null;",
+									"        pm.expect(jsonData.data.borrowRecordId).to.not.be.undefined;",
+									"        ",
+									"        var borrowRecordId = jsonData.data.borrowRecordId;",
+									"        console.log(\"提取到的 borrowRecordId:\", borrowRecordId, \"類型:\", typeof borrowRecordId);",
+									"        ",
+									"        // 設置變數",
+									"        pm.collectionVariables.set(\"test_borrow_record_id\", borrowRecordId.toString());",
+									"        ",
+									"        // 驗證設置成功",
+									"        var setBorrowRecordId = pm.collectionVariables.get(\"test_borrow_record_id\");",
+									"        console.log(\"設置後的 test_borrow_record_id:\", setBorrowRecordId);",
+									"        ",
+									"        pm.expect(setBorrowRecordId).to.equal(borrowRecordId.toString());",
+									"        ",
+									"    } catch (error) {",
+									"        console.error(\"設置 test_borrow_record_id 時發生錯誤:\", error.message);",
+									"        console.error(\"錯誤堆疊:\", error.stack);",
+									"        pm.expect.fail(\"設置 test_borrow_record_id 失敗: \" + error.message);",
+									"    }",
+									"});",
+									"",
+									"pm.test(\"借閱日期正確\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.borrowDate).to.not.be.empty;",
+									"    pm.expect(jsonData.data.dueDate).to.not.be.empty;",
+									"    // 驗證到期日期為一個月後",
+									"    var borrowDate = new Date(jsonData.data.borrowDate);",
+									"    var dueDate = new Date(jsonData.data.dueDate);",
+									"    var diffTime = Math.abs(dueDate - borrowDate);",
+									"    var diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));",
+									"    pm.expect(diffDays).to.be.within(28, 31); // 考慮不同月份的天數",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{member_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"bookCopyId\": {{test_book_copy_id}}\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/borrows",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"borrows"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. 借書（已借閱同一本書）",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"重複借閱同一本書應該失敗\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"錯誤訊息正確\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.false;",
+									"    pm.expect(jsonData.message).to.include('您已經借閱了這本書');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{member_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"bookCopyId\": {{test_book_copy_id}}\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/borrows",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"borrows"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3. 借書（書籍副本不存在）",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"書籍副本不存在應該失敗\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"錯誤訊息正確\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.false;",
+									"    pm.expect(jsonData.message).to.include('書籍副本不存在');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{member_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"bookCopyId\": 99999\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/borrows",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"borrows"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "4. 查詢個人借閱記錄",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"查詢借閱記錄成功\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"借閱記錄格式正確\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.data).to.be.an('array');",
+									"    if (jsonData.data.length > 0) {",
+									"        var record = jsonData.data[0];",
+									"        pm.expect(record.borrowRecordId).to.not.be.empty;",
+									"        pm.expect(record.bookTitle).to.not.be.empty;",
+									"        pm.expect(record.status).to.be.oneOf(['BORROWED', 'RETURNED', 'OVERDUE']);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{member_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/borrows/my-records",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"borrows",
+								"my-records"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "5. 查詢目前借閱中的書籍",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"查詢當前借閱成功\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"當前借閱記錄格式正確\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.data).to.be.an('array');",
+									"    // 如果有借閱記錄，應該都是 BORROWED 狀態",
+									"    jsonData.data.forEach(function(record) {",
+									"        pm.expect(record.status).to.eql('BORROWED');",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{member_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/borrows/current",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"borrows",
+								"current"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "6. 查詢借閱限制信息",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"查詢借閱限制成功\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"借閱限制資訊完整\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.data).to.have.property('BOOK');",
+									"    pm.expect(jsonData.data).to.have.property('MAGAZINE');",
+									"    ",
+									"    var bookLimit = jsonData.data.BOOK;",
+									"    pm.expect(bookLimit.maxLimit).to.eql(10);",
+									"    pm.expect(bookLimit.currentCount).to.be.at.least(0);",
+									"    pm.expect(bookLimit.availableSlots).to.be.at.least(0);",
+									"    ",
+									"    var magazineLimit = jsonData.data.MAGAZINE;",
+									"    pm.expect(magazineLimit.maxLimit).to.eql(5);",
+									"    pm.expect(magazineLimit.currentCount).to.be.at.least(0);",
+									"    pm.expect(magazineLimit.availableSlots).to.be.at.least(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{member_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/borrows/limits",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"borrows",
+								"limits"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "7. 會員還書（成功）",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"還書成功\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"還書資訊正確\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.data.borrowRecordId).to.not.be.empty;",
+									"    pm.expect(jsonData.data.status).to.eql('RETURNED');",
+									"    pm.expect(jsonData.data.returnDate).to.not.be.empty;",
+									"});",
+									"",
+									"pm.test(\"逾期狀態檢查\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.wasOverdue).to.be.a('boolean');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{member_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/borrows/{{test_borrow_record_id}}/return",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"borrows",
+								"{{test_borrow_record_id}}",
+								"return"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "8. 還書（借閱記錄不存在）",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"借閱記錄不存在應該返回 404\", function () {",
+									"    pm.response.to.have.status(404);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{member_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/borrows/99999/return",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"borrows",
+								"99999",
+								"return"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "9. 重複還書（應該失敗）",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"重複還書應該失敗\", function () {",
+									"    console.log(\"重複還書回應狀態碼:\", pm.response.code);",
+									"    console.log(\"重複還書回應內容:\", pm.response.text());",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"錯誤訊息正確\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.false;",
+									"    pm.expect(jsonData.message).to.include('已歸還');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{member_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/borrows/{{test_borrow_record_id}}/return",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"borrows",
+								"{{test_borrow_record_id}}",
+								"return"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "10. 館員查詢逾期書籍",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"館員查詢逾期書籍成功\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"逾期書籍資訊格式正確\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.data).to.be.an('array');",
+									"    // 如果有逾期記錄，檢查格式",
+									"    jsonData.data.forEach(function(record) {",
+									"        pm.expect(record.borrowRecordId).to.not.be.empty;",
+									"        pm.expect(record.isOverdue).to.be.true;",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{librarian_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/borrows/overdue",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"borrows",
+								"overdue"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "11. 會員查詢逾期書籍（應該失敗）",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"會員無權查詢逾期書籍\", function () {",
+									"    pm.response.to.have.status(403);",
+									"});",
+									"",
+									"pm.test(\"錯誤訊息正確\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.false;",
+									"    pm.expect(jsonData.message).to.include('只有館員可以查詢逾期書籍');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{member_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/borrows/overdue",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"borrows",
+								"overdue"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "12. 館員發送到期通知",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"館員發送到期通知成功\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"通知發送回應正確\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.message).to.include('到期通知發送完成');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{librarian_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/borrows/notifications/due-soon",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"borrows",
+								"notifications",
+								"due-soon"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "13. 會員發送到期通知（應該失敗）",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"會員無權發送到期通知\", function () {",
+									"    pm.response.to.have.status(403);",
+									"});",
+									"",
+									"pm.test(\"錯誤訊息正確\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.false;",
+									"    pm.expect(jsonData.message).to.include('只有館員可以發送到期通知');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{member_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/borrows/notifications/due-soon",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"borrows",
+								"notifications",
+								"due-soon"
+							]
+						}
+					},
+					"response": []
+				}
+			]
 		}
 	],
 	"event": [
@@ -1111,6 +1879,16 @@
 		},
 		{
 			"key": "test_book_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "test_book_copy_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "test_borrow_record_id",
 			"value": "",
 			"type": "string"
 		}
