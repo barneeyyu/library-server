@@ -1,27 +1,33 @@
 spring:
   application:
     name: library-server
-  
+
   datasource:
-    url: jdbc:h2:file:./data/library
+    url: jdbc:h2:file:./data/library;DB_CLOSE_ON_EXIT=FALSE;DB_CLOSE_DELAY=-1;AUTO_RECONNECT=TRUE
     driver-class-name: org.h2.Driver
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
-  
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 300000
+      max-lifetime: 1200000
+      connection-timeout: 20000
+
   h2:
     console:
       enabled: true
       path: /h2-console
-  
+
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: create-drop
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
-        
+        format_sql: false
+
   security:
     user:
       name: ${ADMIN_USERNAME}

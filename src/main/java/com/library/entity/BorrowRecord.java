@@ -26,6 +26,10 @@ public class BorrowRecord {
     @JoinColumn(name = "book_copy_id", nullable = false)
     private BookCopy bookCopy;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "library_id", nullable = false)
+    private Library library;
+
     @Column(nullable = false)
     private LocalDate borrowDate;
 
