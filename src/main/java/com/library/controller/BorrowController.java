@@ -6,6 +6,9 @@ import com.library.entity.User;
 import com.library.exception.*;
 import com.library.repository.UserRepository;
 import com.library.service.BorrowService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +21,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/borrows")
+@Tag(name = "借閱管理", description = "書籍借閱、歸還、記錄查詢相關 API")
 public class BorrowController {
 
     @Autowired
@@ -29,6 +33,8 @@ public class BorrowController {
     /**
      * 借書
      */
+    @Operation(summary = "借書", description = "會員借閱書籍")
+    @SecurityRequirement(name = "Bearer Authentication")
     @PostMapping
     public ResponseEntity<ApiResponse<BorrowBookResponse>> borrowBook(
             @Valid @RequestBody BorrowBookRequest request,
@@ -59,6 +65,8 @@ public class BorrowController {
     /**
      * 還書
      */
+    @Operation(summary = "還書", description = "會員歸還已借閱的書籍")
+    @SecurityRequirement(name = "Bearer Authentication")
     @PutMapping("/{borrowRecordId}/return")
     public ResponseEntity<ApiResponse<ReturnBookResponse>> returnBook(
             @PathVariable Long borrowRecordId,
@@ -85,6 +93,8 @@ public class BorrowController {
     /**
      * 查詢個人借閱記錄
      */
+    @Operation(summary = "查詢個人借閱記錄", description = "查詢會員所有借閱歷史記錄")
+    @SecurityRequirement(name = "Bearer Authentication")
     @GetMapping("/my-records")
     public ResponseEntity<ApiResponse<List<BorrowRecordResponse>>> getMyBorrowRecords(
             Authentication authentication) {
@@ -104,6 +114,8 @@ public class BorrowController {
     /**
      * 查詢目前借閱中的書籍
      */
+    @Operation(summary = "查詢目前借閱中的書籍", description = "查詢會員目前尚未歸還的書籍")
+    @SecurityRequirement(name = "Bearer Authentication")
     @GetMapping("/current")
     public ResponseEntity<ApiResponse<List<BorrowRecordResponse>>> getCurrentBorrows(
             Authentication authentication) {
@@ -123,6 +135,8 @@ public class BorrowController {
     /**
      * 查詢借閱限制信息
      */
+    @Operation(summary = "查詢借閱限制信息", description = "查詢不同書籍類型的借閱限制和當前借閱狀況")
+    @SecurityRequirement(name = "Bearer Authentication")
     @GetMapping("/limits")
     public ResponseEntity<ApiResponse<Map<Book.BookType, BorrowLimitInfo>>> getBorrowLimits(
             Authentication authentication) {
@@ -140,6 +154,8 @@ public class BorrowController {
     /**
      * 查詢逾期書籍 (館員專用)
      */
+    @Operation(summary = "查詢逾期書籍", description = "館員查詢所有逾期未歸還的書籍")
+    @SecurityRequirement(name = "Bearer Authentication")
     @GetMapping("/overdue")
     public ResponseEntity<ApiResponse<List<BorrowRecordResponse>>> getOverdueBooks(
             Authentication authentication) {
@@ -166,6 +182,8 @@ public class BorrowController {
     /**
      * 發送到期通知 (館員專用)
      */
+    @Operation(summary = "發送到期通知", description = "館員發送書籍到期歸還提醒通知")
+    @SecurityRequirement(name = "Bearer Authentication")
     @PostMapping("/notifications/due-soon")
     public ResponseEntity<ApiResponse<String>> sendDueNotifications(
             Authentication authentication) {

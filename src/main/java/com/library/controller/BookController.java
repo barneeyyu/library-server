@@ -8,14 +8,15 @@ import com.library.dto.CreateBookRequest;
 import com.library.dto.CreateBookResponse;
 import com.library.entity.User;
 import com.library.exception.InsufficientPermissionException;
-import com.library.exception.LibrarianVerificationException;
 import com.library.repository.UserRepository;
 import com.library.service.BookService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -27,6 +28,7 @@ import java.util.List;
 @RequestMapping("/api/books")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "書籍管理", description = "書籍新增、搜尋、副本管理相關 API")
 public class BookController {
 
     private final BookService bookService;
@@ -35,6 +37,8 @@ public class BookController {
     /**
      * 新增書籍（館員專用）
      */
+    @Operation(summary = "新增書籍", description = "館員新增書籍基本資訊到系統")
+    @SecurityRequirement(name = "Bearer Authentication")
     @PostMapping
     public ResponseEntity<ApiResponse<CreateBookResponse>> createBook(
             @Valid @RequestBody CreateBookRequest request,

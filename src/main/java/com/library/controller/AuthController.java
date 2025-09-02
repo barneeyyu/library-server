@@ -6,6 +6,11 @@ import com.library.dto.LoginRequest;
 import com.library.dto.RegisterRequest;
 import com.library.exception.LibrarianVerificationException;
 import com.library.service.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,13 +23,20 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "認證管理", description = "用戶註冊、登入相關 API")
 public class AuthController {
-    
+
     private final AuthService authService;
-    
+
     /**
      * 用戶註冊
      */
+    @Operation(summary = "用戶註冊", description = "註冊新用戶帳號，支援一般會員和館員註冊")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "註冊成功"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "註冊失敗：用戶名已存在或驗證失敗"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "館員註冊失敗：無效的驗證token")
+    })
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponse>> register(
             @Valid @RequestBody RegisterRequest request,
@@ -32,45 +44,50 @@ public class AuthController {
         try {
             AuthResponse response = authService.register(request, authorization);
             return ResponseEntity.ok(ApiResponse.success("註冊成功", response));
-            
+
         } catch (LibrarianVerificationException e) {
             log.warn("館員驗證失敗：{}", e.getMessage());
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ApiResponse.error(e.getMessage()));
-                    
+
         } catch (IllegalArgumentException e) {
             log.warn("註冊失敗：{}", e.getMessage());
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error(e.getMessage()));
-                    
+
         } catch (Exception e) {
             log.error("註冊過程中發生錯誤", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("註冊失敗，請稍後再試"));
         }
     }
-    
+
     /**
      * 用戶登入
      */
+    @Operation(summary = "用戶登入", description = "使用用戶名和密碼登入系統")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "登入成功"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "登入失敗：用戶名或密碼錯誤")
+    })
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
         try {
             AuthResponse response = authService.login(request);
             return ResponseEntity.ok(ApiResponse.success("登入成功", response));
-            
+
         } catch (BadCredentialsException e) {
             log.warn("登入失敗：{}", e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error(e.getMessage()));
-                    
+
         } catch (Exception e) {
             log.error("登入過程中發生錯誤", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("登入失敗，請稍後再試"));
         }
     }
-    
+
     /**
      * 測試認證狀態
      */

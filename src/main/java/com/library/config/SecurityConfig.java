@@ -37,6 +37,9 @@ public class SecurityConfig {
                 .requestMatchers(new AntPathRequestMatcher("/api/books")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/api/books/*")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/h2-console/**")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/swagger-ui/**")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/v3/api-docs/**")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/swagger-ui.html")).permitAll()
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session
