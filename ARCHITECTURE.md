@@ -54,75 +54,102 @@ src/main/java/com/library/
 
 ## 核心領域模型
 
-### 實體關係圖
+### 資料庫結構
 
-```mermaid
-erDiagram
-    User ||--o{ BorrowRecord : borrows
-    BookCopy ||--o{ BorrowRecord : "is borrowed"
-    Book ||--o{ BookCopy : "has copies in"
-    Library ||--o{ BookCopy : "stores"
-    
-    User {
-        Long id PK
-        String username UK
-        String email UK
-        String password
-        UserRole role
-        Boolean active
-    }
-    
-    Library {
-        Long id PK
-        String name
-        String address
-        String phone
-        Boolean active
-    }
-    
-    Book {
-        Long id PK
-        String title
-        String author
-        Integer publishYear
-        BookType type
-        String isbn
-    }
-    
-    BookCopy {
-        Long id PK
-        Long bookId FK
-        Long libraryId FK
-        Integer totalCopies
-        Integer availableCopies
-        CopyStatus status
-    }
-    
-    BorrowRecord {
-        Long id PK
-        Long userId FK
-        Long bookCopyId FK
-        Date borrowDate
-        Date dueDate
-        Date returnDate
-        BorrowStatus status
-    }
+#### User (用戶表)
+```sql
+CREATE TABLE users (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password VARCHAR(100) NOT NULL,
+    full_name VARCHAR(50) NOT NULL,
+    role ENUM('MEMBER', 'LIBRARIAN') NOT NULL,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+```
+
+#### Library (圖書館表)
+```sql
+CREATE TABLE libraries (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    address VARCHAR(200) NOT NULL,
+    phone VARCHAR(20),
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+```
+
+#### Book (書籍表)
+```sql
+CREATE TABLE books (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(200) NOT NULL,
+    author VARCHAR(100) NOT NULL,
+    publish_year INTEGER NOT NULL,
+    type ENUM('BOOK', 'MAGAZINE') NOT NULL,
+    isbn VARCHAR(20),
+    publisher VARCHAR(100),
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+```
+
+#### BookCopy (館藏表)
+```sql
+CREATE TABLE book_copies (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    book_id BIGINT NOT NULL,
+    library_id BIGINT NOT NULL,
+    total_copies INTEGER NOT NULL,
+    available_copies INTEGER NOT NULL,
+    status ENUM('ACTIVE', 'INACTIVE', 'MAINTENANCE') NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (book_id) REFERENCES books(id),
+    FOREIGN KEY (library_id) REFERENCES libraries(id)
+);
+```
+
+#### BorrowRecord (借閱記錄表)
+```sql
+CREATE TABLE borrow_records (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    book_copy_id BIGINT NOT NULL,
+    library_id BIGINT NOT NULL,
+    borrow_date DATE NOT NULL,
+    due_date DATE NOT NULL,
+    return_date DATE,
+    status ENUM('BORROWED', 'RETURNED', 'OVERDUE') NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (book_copy_id) REFERENCES book_copies(id),
+    FOREIGN KEY (library_id) REFERENCES libraries(id)
+);
 ```
 
 ### 業務規則
 
 1. **用戶權限**
-   - `MEMBER`: 可借閱、查詢書籍
-   - `LIBRARIAN`: 可管理書籍、查看所有借閱記錄
+   - `MEMBER`: 可借閱、查詢書籍、查看個人借閱記錄
+   - `LIBRARIAN`: 可管理書籍、新增館藏、查看所有借閱記錄、發送到期通知
 
 2. **借閱限制**
-   - 圖書：每人最多 5 本
    - 書籍：每人最多 10 本
+   - 圖書：每人最多 5 本
    - 借閱期限：1 個月
 
 3. **庫存管理**
    - 每個圖書館分別管理自己的館藏
    - 同一本書可在多個圖書館有不同數量的副本
+   - 支援依圖書館搜尋書籍
+   - 借閱記錄會記錄所屬圖書館
 
 ## 設計決策
 
@@ -155,6 +182,8 @@ erDiagram
 - 併發寫入限制
 - Spring Boot 整合複雜
 
+備註： 生產環境會選用 PostgreSQL 或 MySQL，擴展性更佳。
+
 ### 3. 認證機制
 
 **決策**: JWT + BCrypt
@@ -164,10 +193,7 @@ erDiagram
 - BCrypt 安全性高，適合密碼加密
 - JWT 便於前後端分離
 
-## 安全設計
-
-### 認證流程
-
+**認證流程**:
 ```mermaid
 sequenceDiagram
     participant C as Client
@@ -183,6 +209,159 @@ sequenceDiagram
     S->>A: JWT token
     A->>C: JWT token + user info
 ```
+
+## 核心業務流程
+
+### 館員新增書籍流程
+
+```mermaid
+sequenceDiagram
+    participant L as Librarian
+    participant BC as Book Controller
+    participant BS as Book Service
+    participant BR as Book Repository
+    participant BCR as BookCopy Repository
+    participant EV as External Verification
+    
+    L->>BC: POST /api/books {書籍資訊}
+    BC->>BC: 驗證 JWT token + LIBRARIAN 角色
+    BC->>BS: createBook(bookRequest, librarianUser)
+    
+    BS->>EV: verifyLibrarianToken(token)
+    EV->>BS: 館員身份驗證結果
+    
+    alt 館員身份驗證通過
+        BS->>BR: findByTitleAndAuthorAndYear()
+        BR->>BS: 檢查書籍是否存在
+        
+        alt 書籍不存在
+            BS->>BR: save(new Book)
+            BR->>BS: Book entity
+            BS->>BC: 新增成功回應
+            BC->>L: 201 Created + 書籍資訊
+        else 書籍已存在
+            BS->>BC: 拋出重複例外
+            BC->>L: 400 Bad Request "書籍已存在"
+        end
+    else 館員身份驗證失敗
+        BS->>BC: 拋出權限例外
+        BC->>L: 400 Bad Request "館員身份驗證失敗"
+    end
+```
+
+### 館員新增館藏流程
+
+```mermaid
+sequenceDiagram
+    participant L as Librarian
+    participant BC as Book Controller
+    participant BS as Book Service
+    participant BR as Book Repository
+    participant BCR as BookCopy Repository
+    
+    L->>BC: POST /api/books/copies {bookId, libraryId, copies}
+    BC->>BC: 驗證 JWT token + LIBRARIAN 角色
+    BC->>BS: addBookCopies(request)
+    
+    BS->>BR: findById(bookId)
+    BR->>BS: Book entity
+    BS->>BCR: findByBookIdAndLibraryId()
+    BCR->>BS: 檢查館藏是否存在
+    
+    alt 館藏不存在
+        BS->>BCR: save(new BookCopy)
+        BCR->>BS: BookCopy entity
+        BS->>BC: 館藏新增成功
+        BC->>L: 200 OK + 館藏資訊
+    else 館藏已存在
+        BS->>BCR: 更新副本數量
+        BCR->>BS: 更新後的 BookCopy
+        BS->>BC: 館藏更新成功
+        BC->>L: 200 OK + 更新後館藏資訊
+    end
+```
+
+### 借書流程
+
+```mermaid
+sequenceDiagram
+    participant M as Member
+    participant BC as Borrow Controller
+    participant BS as Borrow Service
+    participant BR as Borrow Repository
+    participant BCR as BookCopy Repository
+    participant U as User Repository
+    
+    M->>BC: POST /api/borrows {bookCopyId}
+    BC->>BC: 驗證 JWT token
+    BC->>BS: borrowBook(userId, bookCopyId)
+    
+    BS->>U: findById(userId)
+    U->>BS: User entity
+    BS->>BCR: findById(bookCopyId)
+    BCR->>BS: BookCopy entity
+    
+    BS->>BS: 檢查借閱限制 (依書籍類型)
+    BS->>BS: 檢查是否已借閱同本書
+    BS->>BS: 檢查庫存是否充足
+    
+    alt 所有檢查通過
+        BS->>BCR: 減少可借數量
+        BS->>BR: 建立借閱記錄
+        BR->>BS: BorrowRecord entity
+        BS->>BC: 借閱成功回應
+        BC->>M: 200 OK + 借閱資訊
+    else 檢查失敗
+        BS->>BC: 拋出業務例外
+        BC->>M: 400 Bad Request + 錯誤訊息
+    end
+```
+
+### 還書流程
+
+```mermaid
+sequenceDiagram
+    participant M as Member
+    participant BC as Borrow Controller
+    participant BS as Borrow Service
+    participant BR as Borrow Repository
+    participant BCR as BookCopy Repository
+    
+    M->>BC: PUT /api/borrows/{borrowRecordId}/return
+    BC->>BC: 驗證 JWT token
+    BC->>BS: returnBook(borrowRecordId, userId)
+    
+    BS->>BR: findById(borrowRecordId)
+    BR->>BS: BorrowRecord entity
+    
+    BS->>BS: 檢查借閱記錄是否屬於該用戶
+    BS->>BS: 檢查借閱狀態是否為 BORROWED
+    
+    alt 驗證通過
+        BS->>BS: 計算是否逾期
+        BS->>BR: 更新借閱記錄 (狀態→RETURNED, 歸還日期)
+        BR->>BS: 更新後的 BorrowRecord
+        
+        BS->>BCR: 增加可借數量 (+1)
+        BCR->>BS: 更新後的 BookCopy
+        
+        BS->>BC: 還書成功回應
+        BC->>M: 200 OK + 還書資訊 (含逾期狀態)
+    else 驗證失敗
+        alt 借閱記錄不存在
+            BS->>BC: 拋出 NotFound 例外
+            BC->>M: 404 Not Found "借閱記錄不存在"
+        else 借閱記錄不屬於該用戶
+            BS->>BC: 拋出權限例外
+            BC->>M: 403 Forbidden "無權限操作此借閱記錄"
+        else 書籍已歸還
+            BS->>BC: 拋出狀態例外
+            BC->>M: 400 Bad Request "書籍已歸還"
+        end
+    end
+```
+
+## 安全設計
 
 ### 授權策略
 
