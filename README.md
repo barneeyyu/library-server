@@ -120,17 +120,6 @@ mvn jacoco:report
 執行後，報告位於 `target/site/jacoco/index.html`。
 目標測試覆蓋率：> 80%
 
-## 開發工具設定
-
-### IDE 需求
-- 安裝 Lombok 插件
-- 啟用 Annotation Processing
-
-### 除錯模式
-```bash
-mvn spring-boot:run -Dspring-boot.run.jvmArguments="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005"
-```
-
 ## 文件
 
 - [架構設計](ARCHITECTURE.md) - 系統架構、設計決策、技術選型
