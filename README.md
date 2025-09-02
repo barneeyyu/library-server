@@ -123,7 +123,6 @@ mvn jacoco:report
 ## 文件
 
 - [架構設計](ARCHITECTURE.md) - 系統架構、設計決策、技術選型
-- [開發規範](CLAUDE.md) - 編碼標準、最佳實踐、開發流程
 
 ## 開發指南
 
