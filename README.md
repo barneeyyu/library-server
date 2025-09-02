@@ -87,7 +87,7 @@ Authorization: Bearer {{YOUR_JWT_TOKEN}}
 ### Postman 測試 (最推)
 
 專案包含完整的 Postman 測試集合：
-- 匯入 `postman/Library-Management-System.postman_collection.json`
+- 匯入 [`postman/Library-Management-System.postman_collection.json`](postman/Library-Management-System.postman_collection.json)
 - 詳細說明請見 [postman/README.md](postman/README.md)
 
 ### 資料庫

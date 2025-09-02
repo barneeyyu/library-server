@@ -110,6 +110,7 @@ class BorrowRecordRepositoryTest {
         currentBorrow1 = new BorrowRecord();
         currentBorrow1.setUser(memberUser1);
         currentBorrow1.setBookCopy(javaBookCopy);
+        currentBorrow1.setLibrary(activeLibrary);
         currentBorrow1.setBorrowDate(LocalDate.now().minusDays(5));
         currentBorrow1.setDueDate(LocalDate.now().plusDays(25));
         currentBorrow1.setStatus(BorrowRecord.BorrowStatus.BORROWED);
@@ -117,6 +118,7 @@ class BorrowRecordRepositoryTest {
         currentBorrow2 = new BorrowRecord();
         currentBorrow2.setUser(memberUser1);
         currentBorrow2.setBookCopy(pythonMagazineCopy);
+        currentBorrow2.setLibrary(activeLibrary);
         currentBorrow2.setBorrowDate(LocalDate.now().minusDays(3));
         currentBorrow2.setDueDate(LocalDate.now().plusDays(3)); // 即將到期
         currentBorrow2.setStatus(BorrowRecord.BorrowStatus.BORROWED);
@@ -124,6 +126,7 @@ class BorrowRecordRepositoryTest {
         returnedBorrow = new BorrowRecord();
         returnedBorrow.setUser(memberUser1);
         returnedBorrow.setBookCopy(javaBookCopy);
+        returnedBorrow.setLibrary(activeLibrary);
         returnedBorrow.setBorrowDate(LocalDate.now().minusDays(40));
         returnedBorrow.setDueDate(LocalDate.now().minusDays(10));
         returnedBorrow.setReturnDate(LocalDate.now().minusDays(15));
@@ -132,6 +135,7 @@ class BorrowRecordRepositoryTest {
         overdueBorrow = new BorrowRecord();
         overdueBorrow.setUser(memberUser2);
         overdueBorrow.setBookCopy(javaBookCopy);
+        overdueBorrow.setLibrary(activeLibrary);
         overdueBorrow.setBorrowDate(LocalDate.now().minusDays(35));
         overdueBorrow.setDueDate(LocalDate.now().minusDays(5)); // 已逾期
         overdueBorrow.setStatus(BorrowRecord.BorrowStatus.BORROWED);
@@ -294,6 +298,7 @@ class BorrowRecordRepositoryTest {
         BorrowRecord newRecord = new BorrowRecord();
         newRecord.setUser(memberUser2);
         newRecord.setBookCopy(pythonMagazineCopy);
+        newRecord.setLibrary(activeLibrary);
         newRecord.setBorrowDate(LocalDate.now());
         newRecord.setDueDate(LocalDate.now().plusMonths(1));
         newRecord.setStatus(BorrowRecord.BorrowStatus.BORROWED);

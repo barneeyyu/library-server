@@ -210,7 +210,7 @@ class BookControllerTest {
         void searchBooks_Success() throws Exception {
                 // Given
                 List<BookSearchResponse> searchResults = Arrays.asList(bookSearchResponse);
-                when(bookService.searchBooks("Java", null, null, 0, 20))
+                when(bookService.searchBooks("Java", null, null, null, 0, 20))
                                 .thenReturn(searchResults);
 
                 // When & Then
@@ -225,14 +225,14 @@ class BookControllerTest {
                                 .andExpect(jsonPath("$.data[0].title").value("Java程式設計"))
                                 .andExpect(jsonPath("$.data[0].author").value("張三"));
 
-                verify(bookService).searchBooks("Java", null, null, 0, 20);
+                verify(bookService).searchBooks("Java", null, null, null, 0, 20);
         }
 
         @Test
         @DisplayName("搜尋書籍成功 - 無結果")
         void searchBooks_NoResults() throws Exception {
                 // Given
-                when(bookService.searchBooks("不存在的書", null, null, 0, 20))
+                when(bookService.searchBooks("不存在的書", null, null, null, 0, 20))
                                 .thenReturn(Arrays.asList());
 
                 // When & Then
@@ -246,7 +246,7 @@ class BookControllerTest {
                                 .andExpect(jsonPath("$.data").isArray())
                                 .andExpect(jsonPath("$.data").isEmpty());
 
-                verify(bookService).searchBooks("不存在的書", null, null, 0, 20);
+                verify(bookService).searchBooks("不存在的書", null, null, null, 0, 20);
         }
 
         @Test
@@ -256,9 +256,9 @@ class BookControllerTest {
                 mockMvc.perform(get("/api/books/search"))
                                 .andExpect(status().isBadRequest())
                                 .andExpect(jsonPath("$.success").value(false))
-                                .andExpect(jsonPath("$.message").value("請至少提供一個搜尋條件（書名、作者或年份）"));
+                                .andExpect(jsonPath("$.message").value("請至少提供一個搜尋條件（書名、作者、年份或圖書館）"));
 
-                verify(bookService, never()).searchBooks(anyString(), anyString(), any(), anyInt(), anyInt());
+                verify(bookService, never()).searchBooks(anyString(), anyString(), any(), any(), anyInt(), anyInt());
         }
 
         @Test
@@ -273,7 +273,7 @@ class BookControllerTest {
                                 .andExpect(jsonPath("$.success").value(false))
                                 .andExpect(jsonPath("$.message").value("頁數不能小於0"));
 
-                verify(bookService, never()).searchBooks(anyString(), anyString(), any(), anyInt(), anyInt());
+                verify(bookService, never()).searchBooks(anyString(), anyString(), any(), any(), anyInt(), anyInt());
         }
 
         @Test
@@ -288,14 +288,14 @@ class BookControllerTest {
                                 .andExpect(jsonPath("$.success").value(false))
                                 .andExpect(jsonPath("$.message").value("每頁數量必須在1-100之間"));
 
-                verify(bookService, never()).searchBooks(anyString(), anyString(), any(), anyInt(), anyInt());
+                verify(bookService, never()).searchBooks(anyString(), anyString(), any(), any(), anyInt(), anyInt());
         }
 
         @Test
         @DisplayName("搜尋書籍失敗：系統錯誤")
         void searchBooks_SystemError() throws Exception {
                 // Given
-                when(bookService.searchBooks("Java", null, null, 0, 20))
+                when(bookService.searchBooks("Java", null, null, null, 0, 20))
                                 .thenThrow(new RuntimeException("Database connection failed"));
 
                 // When & Then
@@ -307,7 +307,7 @@ class BookControllerTest {
                                 .andExpect(jsonPath("$.success").value(false))
                                 .andExpect(jsonPath("$.message").value("搜尋失敗，請稍後再試"));
 
-                verify(bookService).searchBooks("Java", null, null, 0, 20);
+                verify(bookService).searchBooks("Java", null, null, null, 0, 20);
         }
 
         @Test
