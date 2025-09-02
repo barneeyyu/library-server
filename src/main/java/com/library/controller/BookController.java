@@ -10,6 +10,7 @@ import com.library.entity.User;
 import com.library.exception.InsufficientPermissionException;
 import com.library.repository.UserRepository;
 import com.library.service.BookService;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -70,6 +71,8 @@ public class BookController {
     /**
      * 新增現有書籍副本到不同圖書館（館員專用）
      */
+    @Operation(summary = "新增書籍館藏", description = "館員將現有書籍新增到特定圖書館，或增加現有館藏的副本數量")
+    @SecurityRequirement(name = "Bearer Authentication")
     @PostMapping("/copies")
     public ResponseEntity<ApiResponse<AddBookCopyResponse>> addBookCopies(
             @Valid @RequestBody AddBookCopyRequest request,
@@ -143,6 +146,7 @@ public class BookController {
     /**
      * 處理缺少書籍ID的請求
      */
+    @Hidden
     @GetMapping("")
     public ResponseEntity<ApiResponse<Void>> getBooksWithoutId() {
         return ResponseEntity.badRequest()
@@ -152,6 +156,7 @@ public class BookController {
     /**
      * 獲取書籍詳細資訊（公開）
      */
+    @Operation(summary = "獲取書籍詳情", description = "根據書籍ID獲取書籍的詳細資訊，包含所有圖書館的館藏狀況")
     @GetMapping("/{bookId}")
     public ResponseEntity<ApiResponse<BookSearchResponse>> getBookById(@PathVariable Long bookId) {
         try {

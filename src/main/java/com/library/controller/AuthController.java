@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -91,6 +92,8 @@ public class AuthController {
     /**
      * 測試認證狀態
      */
+    @Operation(summary = "驗證認證狀態", description = "測試當前JWT token是否有效，用於前端驗證用戶登入狀態")
+    @SecurityRequirement(name = "Bearer Authentication")
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<String>> getCurrentUser() {
         // 這個端點需要認證，如果能訪問到說明 JWT 有效
