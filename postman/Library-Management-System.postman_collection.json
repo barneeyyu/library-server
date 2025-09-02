@@ -903,7 +903,57 @@
 					"response": []
 				},
 				{
-					"name": "7. 搜尋書籍（組合條件）",
+					"name": "7. 搜尋書籍（依圖書館）",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"依圖書館搜尋成功\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"搜尋結果正確\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    if (jsonData.data.length > 0) {",
+									"        var book = jsonData.data[0];",
+									"        pm.expect(book.libraries).to.not.be.empty;",
+									"        // 檢查至少有一個圖書館ID為1的館藏",
+									"        var hasLibrary1 = book.libraries.some(lib => lib.libraryId === 1);",
+									"        pm.expect(hasLibrary1).to.be.true;",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/books/search?libraryId=1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"books",
+								"search"
+							],
+							"query": [
+								{
+									"key": "libraryId",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "8. 搜尋書籍（組合條件）",
 					"event": [
 						{
 							"listen": "test",
@@ -932,7 +982,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/api/books/search?title=Spring&author=張&year=2023",
+							"raw": "{{base_url}}/api/books/search?title=Spring&author=張&year=2023&libraryId=1",
 							"host": [
 								"{{base_url}}"
 							],
@@ -953,6 +1003,10 @@
 								{
 									"key": "year",
 									"value": "2023"
+								},
+								{
+									"key": "libraryId",
+									"value": "1"
 								}
 							]
 						}
@@ -960,7 +1014,7 @@
 					"response": []
 				},
 				{
-					"name": "8. 搜尋書籍（無條件 - 應該失敗）",
+					"name": "9. 搜尋書籍（無條件 - 應該失敗）",
 					"event": [
 						{
 							"listen": "test",
@@ -973,7 +1027,7 @@
 									"pm.test(\"錯誤訊息正確\", function () {",
 									"    var jsonData = pm.response.json();",
 									"    pm.expect(jsonData.success).to.be.false;",
-									"    pm.expect(jsonData.message).to.include(\"請至少提供一個搜尋條件\");",
+									"    pm.expect(jsonData.message).to.include(\"請至少提供一個搜尋條件（書名、作者、年份或圖書館）\");",
 									"});"
 								],
 								"type": "text/javascript"
@@ -998,7 +1052,7 @@
 					"response": []
 				},
 				{
-					"name": "9. 取得書籍詳情",
+					"name": "10. 取得書籍詳情",
 					"event": [
 						{
 							"listen": "test",
@@ -1039,7 +1093,7 @@
 					"response": []
 				},
 				{
-					"name": "10. 取得不存在書籍",
+					"name": "11. 取得不存在書籍",
 					"event": [
 						{
 							"listen": "test",

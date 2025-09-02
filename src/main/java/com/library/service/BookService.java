@@ -152,10 +152,20 @@ public class BookService {
      * 搜尋書籍
      */
     public List<BookSearchResponse> searchBooks(String title, String author, Integer year, int page, int size) {
-        log.info("搜尋書籍：title={}, author={}, year={}, page={}, size={}", title, author, year, page, size);
+        return searchBooks(title, author, year, null, page, size);
+    }
+    
+    public List<BookSearchResponse> searchBooks(String title, String author, Integer year, Long libraryId, int page, int size) {
+        log.info("搜尋書籍：title={}, author={}, year={}, libraryId={}, page={}, size={}", title, author, year, libraryId, page, size);
         
         Pageable pageable = PageRequest.of(page, size);
-        List<Book> books = bookRepository.searchBooks(title, author, year, pageable);
+        List<Book> books;
+        
+        if (libraryId != null) {
+            books = bookRepository.searchBooksWithLibrary(title, author, year, libraryId, pageable);
+        } else {
+            books = bookRepository.searchBooks(title, author, year, pageable);
+        }
         
         if (books.isEmpty()) {
             return new ArrayList<>();

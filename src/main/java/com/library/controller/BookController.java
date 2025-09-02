@@ -101,11 +101,13 @@ public class BookController {
     /**
      * 搜尋書籍（公開）
      */
+    @Operation(summary = "搜尋書籍", description = "根據書名、作者、年份或圖書館搜尋書籍。至少需要提供一個搜尋條件。")
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<List<BookSearchResponse>>> searchBooks(
             @RequestParam(required = false) String title,
             @RequestParam(required = false) String author,
             @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Long libraryId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         try {
@@ -120,12 +122,12 @@ public class BookController {
             }
 
             // 至少需要一個搜尋條件
-            if (title == null && author == null && year == null) {
+            if (title == null && author == null && year == null && libraryId == null) {
                 return ResponseEntity.badRequest()
-                        .body(ApiResponse.error("請至少提供一個搜尋條件（書名、作者或年份）"));
+                        .body(ApiResponse.error("請至少提供一個搜尋條件（書名、作者、年份或圖書館）"));
             }
 
-            List<BookSearchResponse> results = bookService.searchBooks(title, author, year, page, size);
+            List<BookSearchResponse> results = bookService.searchBooks(title, author, year, libraryId, page, size);
 
             String message = results.isEmpty() ? "未找到符合條件的書籍" : String.format("找到 %d 本書籍", results.size());
 
