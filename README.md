@@ -2,6 +2,9 @@
 
 基於 Java + Spring Boot 開發的多館圖書借閱管理系統。
 
+> **⚠️ 首次使用須知**  
+> 本專案需要 `.env` 環境變數檔案才能正常運行。請先複製 `.env.example` 為 `.env` 並根據需求調整配置。詳見 [安裝指引](#安裝指引)。
+
 ## 專案簡介
 
 本系統提供完整的圖書館管理功能，支援多館系統、使用者權限管理、書籍借閱等核心功能。設計遵循 Clean Code 原則，具備高可測試性與可維護性。
@@ -21,7 +24,17 @@
    ```
 
 2. **設定環境變數**
-   把信中附件的 `.env` 檔案放到專案根目錄，並根據需求修改內容。
+   
+   ⚠️ **重要**: 應用程式依賴 `.env` 檔案提供敏感配置，必須先建立此檔案才能正常運行。
+   
+   ```bash
+   # 將 .env 檔案放到專案根目錄
+   cp .env.example .env
+   # 或直接建立 .env 檔案
+   ```
+   記得先將`.env`裡面的參數正確配置後系統才能正常運行
+   
+   > **安全提醒**: `.env` 檔案包含敏感資訊，已加入 `.gitignore`，不會被提交到版本控制。
 
 3. **編譯專案**
    ```bash
@@ -36,7 +49,46 @@
 ## 使用說明
 
 ### API 端點
-//TODO: 補充 API 端點說明
+
+系統提供完整的 RESTful API，並整合 Swagger 文檔以便於開發和測試。
+
+#### Swagger API 文檔
+- **Swagger UI**：http://localhost:8080/swagger-ui/index.html
+- **OpenAPI JSON**：http://localhost:8080/v3/api-docs
+
+#### 主要 API 端點
+
+##### 🔐 認證管理 (`/api/auth`)
+- `POST /api/auth/register` - 用戶註冊（支援會員和館員）
+- `POST /api/auth/login` - 用戶登入
+- `GET /api/auth/me` - 驗證當前認證狀態
+
+##### 📚 書籍管理 (`/api/books`)
+- `POST /api/books` - 新增書籍（館員專用）
+- `POST /api/books/copies` - 新增書籍副本到圖書館（館員專用）
+- `GET /api/books/search` - 搜尋書籍（公開）
+- `GET /api/books/{bookId}` - 獲取書籍詳細資訊（公開）
+
+##### 📖 借閱管理 (`/api/borrows`)
+- `POST /api/borrows` - 借書
+- `PUT /api/borrows/{borrowRecordId}/return` - 還書
+- `GET /api/borrows/my-records` - 查詢個人借閱記錄
+- `GET /api/borrows/current` - 查詢目前借閱中的書籍
+- `GET /api/borrows/limits` - 查詢借閱限制信息
+- `GET /api/borrows/overdue` - 查詢逾期書籍（館員專用）
+- `POST /api/borrows/notifications/due-soon` - 發送到期通知（館員專用）
+
+#### 認證方式
+大部分 API 需要 JWT 認證，請在請求標頭中加入：
+```
+Authorization: Bearer {{YOUR_JWT_TOKEN}}
+```
+
+### Postman 測試 (最推)
+
+專案包含完整的 Postman 測試集合：
+- 匯入 `postman/Library-Management-System.postman_collection.json`
+- 詳細說明請見 [postman/README.md](postman/README.md)
 
 ### 資料庫
 - **H2 資料庫**位於 `./data/library.mv.db`
@@ -79,57 +131,6 @@ mvn jacoco:report
 mvn spring-boot:run -Dspring-boot.run.jvmArguments="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005"
 ```
 
-## API 測試
-
-### 會員註冊範例
-```bash
-# 註冊一般會員
-curl -X POST http://localhost:8080/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "testuser",
-    "password": "password123",
-    "email": "test@example.com",
-    "fullName": "測試用戶",
-    "role": "MEMBER"
-  }'
-
-# 註冊館員（需要驗證 token）
-curl -X POST http://localhost:8080/api/auth/register \
-  -H "Content-Type: application/json" \
-  -H "Authorization: todo" \
-  -d '{
-    "username": "librarian",
-    "password": "password123",
-    "email": "librarian@example.com",
-    "fullName": "圖書館員",
-    "role": "LIBRARIAN"
-  }'
-```
-
-### 會員登入範例
-```bash
-curl -X POST http://localhost:8080/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "testuser",
-    "password": "password123"
-  }'
-```
-
-### 使用 JWT Token
-```bash
-# 從登入回應中取得 token，然後：
-curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  http://localhost:8080/api/auth/me
-```
-
-## Postman 測試
-
-專案包含完整的 Postman 測試集合：
-- 匯入 `postman/Library-Management-System.postman_collection.json`
-- 詳細說明請見 `postman/README.md`
-
 ## 文件
 
 - [架構設計](ARCHITECTURE.md) - 系統架構、設計決策、技術選型
@@ -149,17 +150,28 @@ curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
    ```
 
 ### 常見問題
-1. **無法連線 H2 Console**：
+
+1. **應用程式啟動失敗**：
+   - 確認 `.env` 檔案是否存在於專案根目錄
+   - 檢查 `.env` 檔案中的配置是否正確
+   - 確認 `JWT_SECRET` 長度至少 32 字元
+
+2. **無法連線 H2 Console**：
    - 確認應用程式正在運行
    - 檢查 URL：http://localhost:8080/h2-console
+   - 確認 `.env` 中的 `SERVER_PORT` 配置
 
-2. **資料庫鎖定問題**：
+3. **資料庫鎖定問題**：
    - 確保只有一個應用程式實例在運行
    - 重啟應用程式會重建資料庫
 
-3. **JWT Token 過期**：
-   - Token 有效期為 24 小時
+4. **JWT Token 過期**：
+   - Token 有效期為 24 小時（可在 `.env` 中調整 `JWT_EXPIRATION`）
    - 重新登入獲取新 Token
+
+5. **館員註冊失敗**：
+   - 檢查 `.env` 中的 `EXTERNAL_VERIFICATION_URL` 是否正確
+   - 確認網路連線可以訪問外部驗證服務
 
 ## 貢獻指南
 
