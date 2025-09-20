@@ -9,5 +9,6 @@ import java.util.List;
 @Repository
 public interface LibraryRepository extends JpaRepository<Library, Long> {
     List<Library> findByActiveTrue();
+
     List<Library> findByNameContainingIgnoreCase(String name);
 }
