@@ -42,10 +42,7 @@ public class BookService {
     public CreateBookResponse createBook(CreateBookRequest request, User librarian) {
         log.info("館員 {} 新增書籍：{}", librarian.getUsername(), request.getTitle());
         
-        // 驗證館員權限
-        if (librarian.getRole() != User.UserRole.LIBRARIAN) {
-            throw new InsufficientPermissionException("只有館員可以新增書籍");
-        }
+        // 權限檢查已由 Spring Security 在 Controller 層處理
         
         // 檢查是否已存在相同書籍
         Book existingBook = bookRepository.findByTitleAndAuthorAndPublishYear(
@@ -81,10 +78,7 @@ public class BookService {
         log.info("館員 {} 新增書籍副本：bookId={}, libraryId={}, copies={}", 
                 librarian.getUsername(), request.getBookId(), request.getLibraryId(), request.getCopies());
         
-        // 驗證館員權限
-        if (librarian.getRole() != User.UserRole.LIBRARIAN) {
-            throw new InsufficientPermissionException("只有館員可以新增書籍副本");
-        }
+        // 權限檢查已由 Spring Security 在 Controller 層處理
         
         // 驗證書籍是否存在
         Book book = bookRepository.findById(request.getBookId())

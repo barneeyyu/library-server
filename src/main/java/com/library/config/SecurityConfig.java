@@ -9,6 +9,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -20,6 +21,7 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -29,27 +31,36 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(authz -> authz
-                .requestMatchers(new AntPathRequestMatcher("/api/auth/register")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/api/auth/login")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/api/books/search")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/api/books")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/api/books/*")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/h2-console/**")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/swagger-ui/**")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/v3/api-docs/**")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/swagger-ui.html")).permitAll()
-                .anyRequest().authenticated()
-            )
-            .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            )
-            .authenticationProvider(authenticationProvider())
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-            .headers(headers -> headers
-                .frameOptions().sameOrigin());
-        
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(authz -> authz
+                        // 公開端點 - 無需認證
+                        .requestMatchers(new AntPathRequestMatcher("/api/auth/register")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/api/auth/login")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/api/books/search")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/api/books/{id}", "GET")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/h2-console/**")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/swagger-ui/**")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/v3/api-docs/**")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/swagger-ui.html")).permitAll()
+
+                        // 書籍管理 - 館員專用
+                        .requestMatchers(new AntPathRequestMatcher("/api/books", "POST")).hasRole("LIBRARIAN")
+                        .requestMatchers(new AntPathRequestMatcher("/api/books/copies", "POST")).hasRole("LIBRARIAN")
+                        .requestMatchers(new AntPathRequestMatcher("/api/books/{id}", "PUT")).hasRole("LIBRARIAN")
+                        .requestMatchers(new AntPathRequestMatcher("/api/books/{id}", "DELETE")).hasRole("LIBRARIAN")
+
+                        // 借閱管理 - 需要認證用戶
+                        .requestMatchers(new AntPathRequestMatcher("/api/borrow/**")).hasAnyRole("MEMBER", "LIBRARIAN")
+
+                        // 其他端點需要認證
+                        .anyRequest().authenticated())
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authenticationProvider(authenticationProvider())
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .headers(headers -> headers
+                        .frameOptions().sameOrigin());
+
         return http.build();
     }
 

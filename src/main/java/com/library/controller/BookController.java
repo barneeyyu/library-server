@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -40,6 +41,7 @@ public class BookController {
      */
     @Operation(summary = "新增書籍", description = "館員新增書籍基本資訊到系統")
     @SecurityRequirement(name = "Bearer Authentication")
+    @PreAuthorize("hasRole('LIBRARIAN')")
     @PostMapping
     public ResponseEntity<ApiResponse<CreateBookResponse>> createBook(
             @Valid @RequestBody CreateBookRequest request,
@@ -50,11 +52,6 @@ public class BookController {
 
             CreateBookResponse response = bookService.createBook(request, currentUser);
             return ResponseEntity.ok(ApiResponse.success("書籍新增成功", response));
-
-        } catch (InsufficientPermissionException e) {
-            log.warn("權限不足：{}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(ApiResponse.error(e.getMessage()));
 
         } catch (IllegalArgumentException e) {
             log.warn("書籍新增失敗：{}", e.getMessage());
@@ -73,6 +70,7 @@ public class BookController {
      */
     @Operation(summary = "新增書籍館藏", description = "館員將現有書籍新增到特定圖書館，或增加現有館藏的副本數量")
     @SecurityRequirement(name = "Bearer Authentication")
+    @PreAuthorize("hasRole('LIBRARIAN')")
     @PostMapping("/copies")
     public ResponseEntity<ApiResponse<AddBookCopyResponse>> addBookCopies(
             @Valid @RequestBody AddBookCopyRequest request,
@@ -83,11 +81,6 @@ public class BookController {
 
             AddBookCopyResponse response = bookService.addBookCopies(request, currentUser);
             return ResponseEntity.ok(ApiResponse.success("書籍副本新增成功", response));
-
-        } catch (InsufficientPermissionException e) {
-            log.warn("權限不足：{}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(ApiResponse.error(e.getMessage()));
 
         } catch (IllegalArgumentException e) {
             log.warn("書籍副本新增失敗：{}", e.getMessage());
