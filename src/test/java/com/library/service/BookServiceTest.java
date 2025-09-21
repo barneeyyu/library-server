@@ -8,7 +8,6 @@ import com.library.entity.Book;
 import com.library.entity.BookCopy;
 import com.library.entity.Library;
 import com.library.entity.User;
-import com.library.exception.InsufficientPermissionException;
 import com.library.repository.BookCopyRepository;
 import com.library.repository.BookRepository;
 import com.library.repository.LibraryRepository;
@@ -155,15 +154,23 @@ class BookServiceTest {
         }
 
         @Test
-        @DisplayName("新增書籍失敗：非館員用戶")
-        void createBook_NonLibrarianUser_ThrowsException() {
-                // When & Then
-                assertThatThrownBy(() -> bookService.createBook(createBookRequest, memberUser))
-                                .isInstanceOf(InsufficientPermissionException.class)
-                                .hasMessage("只有館員可以新增書籍");
+        @DisplayName("MEMBER 用戶也可以呼叫 createBook - 權限檢查已移至 Controller 層")
+        void createBook_MemberUser_Success() {
+                // Given - 現在 Service 層不再檢查權限，專注業務邏輯
+                when(bookRepository.findByTitleAndAuthorAndPublishYear("Java程式設計", "張三", 2023))
+                                .thenReturn(Optional.empty());
+                when(bookRepository.save(any(Book.class))).thenReturn(existingBook);
 
-                verify(libraryRepository, never()).findById(anyLong());
-                verify(bookRepository, never()).save(any(Book.class));
+                // When - MEMBER 用戶也能成功呼叫（權限由 Spring Security 在 Controller 層處理）
+                CreateBookResponse response = bookService.createBook(createBookRequest, memberUser);
+
+                // Then
+                assertThat(response).isNotNull();
+                assertThat(response.getBookId()).isEqualTo(1L);
+                assertThat(response.getTitle()).isEqualTo("Java程式設計");
+
+                verify(bookRepository).findByTitleAndAuthorAndPublishYear("Java程式設計", "張三", 2023);
+                verify(bookRepository).save(any(Book.class));
         }
 
 

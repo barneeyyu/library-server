@@ -7,7 +7,6 @@ import com.library.dto.CreateBookRequest;
 import com.library.dto.CreateBookResponse;
 import com.library.entity.Book;
 import com.library.entity.User;
-import com.library.exception.InsufficientPermissionException;
 import com.library.repository.UserRepository;
 import com.library.service.BookService;
 import org.junit.jupiter.api.BeforeEach;
@@ -125,24 +124,21 @@ class BookControllerTest {
         }
 
         @Test
-        @DisplayName("新增書籍失敗：權限不足")
-        @WithMockUser(username = "member")
+        @DisplayName("新增書籍失敗：權限不足 - Spring Security 阻擋")
+        @WithMockUser(username = "member", roles = {"MEMBER"})
         void createBook_InsufficientPermission() throws Exception {
-                // Given
-                when(userRepository.findByUsername("member")).thenReturn(Optional.of(memberUser));
-                when(bookService.createBook(any(CreateBookRequest.class), eq(memberUser)))
-                                .thenThrow(new InsufficientPermissionException("只有館員可以新增書籍"));
+                // Given - MEMBER 角色無法通過 @PreAuthorize("hasRole('LIBRARIAN')")
+                // Spring Security 會在到達 Controller 方法前就拒絕存取
 
                 // When & Then
                 mockMvc.perform(post("/api/books")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(createBookRequest)))
-                                .andExpect(status().isForbidden())
-                                .andExpect(jsonPath("$.success").value(false))
-                                .andExpect(jsonPath("$.message").value("只有館員可以新增書籍"));
+                                .andExpect(status().isForbidden()); // Spring Security 回傳 403
 
-                verify(userRepository).findByUsername("member");
-                verify(bookService).createBook(any(CreateBookRequest.class), eq(memberUser));
+                // Service 層不會被呼叫，因為 Spring Security 提前阻擋
+                verify(userRepository, never()).findByUsername(anyString());
+                verify(bookService, never()).createBook(any(CreateBookRequest.class), any(User.class));
         }
 
         @Test

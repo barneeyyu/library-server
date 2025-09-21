@@ -20,77 +20,75 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Slf4j
 public class AuthService {
-    
+
+    private final JwtService jwtService;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtService jwtService;
     private final UserDetailsServiceImpl userDetailsService;
     private final ExternalVerificationService externalVerificationService;
     private final AuthenticationManager authenticationManager;
-    
+
     /**
      * 用戶註冊
      */
     @Transactional
     public AuthResponse register(RegisterRequest request, String librarianToken) {
         log.info("用戶註冊請求：username={}, role={}", request.getUsername(), request.getRole());
-        
+
         // 驗證用戶名和電子郵件是否已存在
         validateUserNotExists(request.getUsername(), request.getEmail());
-        
+
         // 驗證角色
         User.UserRole userRole = validateAndParseRole(request.getRole());
-        
+
         // 如果是館員，需要進行外部系統驗證
         if (userRole == User.UserRole.LIBRARIAN) {
             validateLibrarianCredentials(librarianToken);
         }
-        
+
         // 創建新用戶
         User user = createUser(request, userRole);
         User savedUser = userRepository.save(user);
-        
+
         // 生成 JWT token
         UserDetails userDetails = userDetailsService.loadUserByUsername(savedUser.getUsername());
         String token = jwtService.generateToken(userDetails);
-        
+
         log.info("用戶註冊成功：userId={}, username={}", savedUser.getId(), savedUser.getUsername());
-        
+
         return new AuthResponse(token, mapToUserInfo(savedUser));
     }
-    
+
     /**
      * 用戶登入
      */
     public AuthResponse login(LoginRequest request) {
         log.info("用戶登入請求：username={}", request.getUsername());
-        
+
         try {
             // 驗證用戶憑證
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             request.getUsername(),
-                            request.getPassword()
-                    )
-            );
-            
+                            request.getPassword()));
+
             // 載入用戶詳細信息
             User user = userRepository.findByUsername(request.getUsername())
                     .orElseThrow(() -> new BadCredentialsException("使用者不存在"));
-            
+
             UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
             String token = jwtService.generateToken(userDetails);
-            
+
             log.info("用戶登入成功：userId={}, username={}", user.getId(), user.getUsername());
-            
+
             return new AuthResponse(token, mapToUserInfo(user));
-            
+
         } catch (BadCredentialsException e) {
             log.warn("用戶登入失敗：username={}, reason={}", request.getUsername(), e.getMessage());
             throw new BadCredentialsException("使用者名稱或密碼錯誤");
         }
     }
-    
+
     /**
      * 驗證用戶名和電子郵件是否已存在
      */
@@ -98,12 +96,12 @@ public class AuthService {
         if (userRepository.existsByUsername(username)) {
             throw new IllegalArgumentException("使用者名稱已存在：" + username);
         }
-        
+
         if (userRepository.existsByEmail(email)) {
             throw new IllegalArgumentException("電子郵件已被使用：" + email);
         }
     }
-    
+
     /**
      * 驗證並解析用戶角色
      */
@@ -114,7 +112,7 @@ public class AuthService {
             throw new IllegalArgumentException("無效的用戶角色：" + role);
         }
     }
-    
+
     /**
      * 驗證館員憑證
      */
@@ -122,12 +120,12 @@ public class AuthService {
         if (librarianToken == null || librarianToken.trim().isEmpty()) {
             throw new LibrarianVerificationException("館員註冊需要提供 Authorization: todo header");
         }
-        
+
         if (!externalVerificationService.verifyLibrarianCredentials(librarianToken)) {
             throw new LibrarianVerificationException("館員身份驗證失敗，請檢查驗證 token");
         }
     }
-    
+
     /**
      * 創建新用戶
      */
@@ -139,10 +137,10 @@ public class AuthService {
         user.setFullName(request.getFullName());
         user.setRole(userRole);
         user.setActive(true);
-        
+
         return user;
     }
-    
+
     /**
      * 將 User 實體轉換為 UserInfo DTO
      */
@@ -152,7 +150,6 @@ public class AuthService {
                 user.getUsername(),
                 user.getEmail(),
                 user.getFullName(),
-                user.getRole().name()
-        );
+                user.getRole().name());
     }
 }
