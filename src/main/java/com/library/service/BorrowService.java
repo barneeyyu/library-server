@@ -8,6 +8,7 @@ import com.library.repository.BorrowRecordRepository;
 
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +32,14 @@ public class BorrowService {
      * 借書功能
      */
     public BorrowBookResponse borrowBook(BorrowBookRequest request, User user) {
+        try {
+            return performBorrowing(request, user);
+        } catch (OptimisticLockingFailureException e) {
+            throw new BookNotAvailableException("書籍借閱失敗，其他用戶同時在借閱此書，請重試");
+        }
+    }
+
+    private BorrowBookResponse performBorrowing(BorrowBookRequest request, User user) {
         // 1. 檢查書籍副本是否存在且可借閱
         BookCopy bookCopy = bookCopyRepository.findById(request.getBookCopyId())
                 .orElseThrow(() -> new IllegalArgumentException("書籍副本不存在：ID " + request.getBookCopyId()));
@@ -80,6 +89,14 @@ public class BorrowService {
      * 還書功能
      */
     public ReturnBookResponse returnBook(Long borrowRecordId, User user) {
+        try {
+            return performReturning(borrowRecordId, user);
+        } catch (OptimisticLockingFailureException e) {
+            throw new BookNotAvailableException("還書失敗，其他用戶同時在操作此書籍，請重試");
+        }
+    }
+
+    private ReturnBookResponse performReturning(Long borrowRecordId, User user) {
         // 1. 檢查借閱記錄是否存在
         BorrowRecord borrowRecord = borrowRecordRepository.findById(borrowRecordId)
                 .orElseThrow(() -> new BorrowRecordNotFoundException("借閱記錄不存在：ID " + borrowRecordId));
@@ -204,5 +221,25 @@ public class BorrowService {
         }
 
         System.out.println("=== 通知發送完成 ===");
+    }
+
+    /**
+     * 測試專用：模擬事務失敗的操作
+     */
+    @Transactional
+    public void performFailingOperation(Long borrowRecordId, Long bookCopyId) {
+        // 步驟1: 更新借閱記錄
+        BorrowRecord borrowRecord = borrowRecordRepository.findById(borrowRecordId).orElseThrow();
+        borrowRecord.setStatus(BorrowRecord.BorrowStatus.RETURNED);
+        borrowRecord.setReturnDate(LocalDate.now());
+        borrowRecordRepository.save(borrowRecord);
+
+        // 步驟2: 更新書籍副本
+        BookCopy bookCopy = bookCopyRepository.findById(bookCopyId).orElseThrow();
+        bookCopy.setAvailableCopies(bookCopy.getAvailableCopies() + 1);
+        bookCopyRepository.save(bookCopy);
+
+        // 步驟3: 故意拋出異常來觸發回滾
+        throw new RuntimeException("故意觸發事務回滾測試");
     }
 }

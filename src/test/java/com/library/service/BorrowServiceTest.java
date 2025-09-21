@@ -14,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.dao.OptimisticLockingFailureException;
 
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -466,5 +467,48 @@ class BorrowServiceTest {
                                 .doesNotThrowAnyException();
 
                 verify(borrowRecordRepository).findDueSoon(any(LocalDate.class), any(LocalDate.class));
+        }
+
+        @Test
+        @DisplayName("借書時樂觀鎖衝突 - 拋出適當異常")
+        void borrowBook_OptimisticLockingFailure_ThrowsBookNotAvailableException() {
+                // Given
+                when(bookCopyRepository.findById(1L)).thenReturn(Optional.of(javaBookCopy));
+                when(borrowRecordRepository.findActiveBorrowByUserAndBook(eq(memberUser.getId()), eq(javaBook.getId())))
+                                .thenReturn(Optional.empty());
+                when(borrowRecordRepository.countCurrentBorrowsByUserAndBookType(eq(memberUser.getId()), eq(Book.BookType.BOOK)))
+                                .thenReturn(0L);
+                
+                // 模擬樂觀鎖衝突：當嘗試儲存 BookCopy 時拋出異常
+                when(bookCopyRepository.save(any(BookCopy.class)))
+                                .thenThrow(new OptimisticLockingFailureException("Version conflict"));
+
+                // When & Then
+                assertThatThrownBy(() -> borrowService.borrowBook(borrowRequest, memberUser))
+                                .isInstanceOf(BookNotAvailableException.class)
+                                .hasMessage("書籍借閱失敗，其他用戶同時在借閱此書，請重試");
+
+                verify(bookCopyRepository).findById(1L);
+                verify(bookCopyRepository).save(any(BookCopy.class));
+        }
+
+        @Test
+        @DisplayName("還書時樂觀鎖衝突 - 拋出適當異常")
+        void returnBook_OptimisticLockingFailure_ThrowsBookNotAvailableException() {
+                // Given
+                when(borrowRecordRepository.findById(1L)).thenReturn(Optional.of(borrowRecord));
+                when(borrowRecordRepository.save(any(BorrowRecord.class))).thenReturn(borrowRecord);
+                
+                // 模擬樂觀鎖衝突：當嘗試儲存 BookCopy 時拋出異常
+                when(bookCopyRepository.save(any(BookCopy.class)))
+                                .thenThrow(new OptimisticLockingFailureException("Version conflict"));
+
+                // When & Then
+                assertThatThrownBy(() -> borrowService.returnBook(1L, memberUser))
+                                .isInstanceOf(BookNotAvailableException.class)
+                                .hasMessage("還書失敗，其他用戶同時在操作此書籍，請重試");
+
+                verify(borrowRecordRepository).findById(1L);
+                verify(bookCopyRepository).save(any(BookCopy.class));
         }
 }

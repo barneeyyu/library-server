@@ -108,6 +108,7 @@ CREATE TABLE book_copies (
     library_id BIGINT NOT NULL,
     total_copies INTEGER NOT NULL,
     available_copies INTEGER NOT NULL,
+    version BIGINT,  -- 樂觀鎖版本號，防止併發超借
     status ENUM('ACTIVE', 'INACTIVE', 'MAINTENANCE') NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -193,6 +194,70 @@ CREATE TABLE borrow_records (
 - 無狀態認證，適合 REST API
 - BCrypt 安全性高，適合密碼加密
 - JWT 便於前後端分離
+
+### 4. 併發控制策略
+
+**決策**: JPA 樂觀鎖 (@Version)
+
+**問題場景**: 防止書籍超借
+```java
+// 併發問題：兩個用戶同時借最後一本書
+用戶A: 查詢 availableCopies = 1 ✓
+用戶B: 查詢 availableCopies = 1 ✓  
+用戶A: 設定 availableCopies = 0，借書成功
+用戶B: 設定 availableCopies = 0，借書成功  // 💥 超借！
+```
+
+**解決方案選擇**:
+
+| 方案 | 性能 | 複雜度 | 適用性 | 選擇 |
+|-----|------|--------|--------|------|
+| **樂觀鎖 @Version** | ⭐⭐⭐⭐ | ⭐⭐ | ✅ 圖書館低衝突場景 | ✅ |
+| 悲觀鎖 JPA | ⭐⭐ | ⭐⭐⭐ | ❌ 高衝突場景適用 | ❌ |
+| SELECT FOR UPDATE | ⭐⭐ | ⭐⭐⭐ | ❌ 阻塞等待體驗差 | ❌ |
+| 原子操作 SQL | ⭐⭐⭐⭐⭐ | ⭐ | ❌ 複雜業務邏輯不適用 | ❌ |
+
+**選擇樂觀鎖的理由**:
+1. **低衝突頻率**: 圖書館借書不是高頻搶購，同時借同一本書的機率低
+2. **非阻塞性能**: 不會因為一個用戶操作而阻塞其他用戶
+3. **用戶體驗**: 衝突時提供重試機制，避免長時間等待
+4. **實作簡單**: Spring JPA 原生支援，維護成本低
+5. **無死鎖風險**: 相比悲觀鎖，完全避免死鎖問題
+
+**實作機制**:
+```java
+@Entity
+public class BookCopy {
+    @Version
+    private Long version;  // JPA 自動管理版本號
+    
+    // 每次更新會自動檢查並遞增版本號
+    // 如果版本號不匹配，拋出 OptimisticLockingFailureException
+}
+
+@Service
+@Transactional
+public class BorrowService {
+    public BorrowBookResponse borrowBook(BorrowBookRequest request, User user) {
+        try {
+            return performBorrowing(request, user);
+        } catch (OptimisticLockingFailureException e) {
+            // 轉換為業務友善的錯誤訊息
+            throw new BookNotAvailableException("書籍借閱失敗，其他用戶同時在借閱此書，請重試");
+        }
+    }
+}
+```
+
+**事務保護**:
+- 使用 `@Transactional` 確保借書操作的原子性
+- 任何步驟失敗都會回滾整個事務，保證數據一致性
+- 樂觀鎖衝突會觸發整個事務回滾
+
+**測試驗證**:
+- 單元測試：模擬 OptimisticLockingFailureException
+- 整合測試：使用 CompletableFuture 測試真實併發場景
+- 版本號測試：驗證 @Version 機制正常運作
 
 **認證流程**:
 ```mermaid
@@ -380,6 +445,7 @@ sequenceDiagram
    CREATE INDEX idx_user_username ON users(username);
    CREATE INDEX idx_book_title ON books(title);
    CREATE INDEX idx_borrow_user_status ON borrow_records(user_id, status);
+   CREATE INDEX idx_bookcopy_book_library ON book_copies(book_id, library_id);
    ```
 
 2. **查詢最佳化**
@@ -395,6 +461,33 @@ sequenceDiagram
 4. **快取策略**
    - 書籍資訊使用 `@Cacheable`
    - 用戶權限資訊快取
+
+### 併發性能
+
+1. **樂觀鎖效能特點**
+   - **讀取性能**: 無鎖開銷，多用戶可同時讀取
+   - **寫入性能**: 僅在更新時檢查版本號，開銷極小
+   - **衝突處理**: 快速失敗，避免長時間阻塞
+   - **記憶體使用**: 版本號佔用 8 bytes，影響微乎其微
+
+2. **事務設計**
+   - 保持事務短小，減少樂觀鎖衝突視窗
+   - 避免在事務中進行長時間操作（如外部 API 調用）
+   - 使用 `@Transactional(readOnly = true)` 優化唯讀操作
+
+3. **衝突率監控**
+   ```java
+   // 可加入監控指標
+   @EventListener
+   public void handleOptimisticLockFailure(OptimisticLockingFailureException e) {
+       metricsService.incrementCounter("optimistic_lock_conflicts");
+   }
+   ```
+
+4. **效能指標**
+   - 樂觀鎖衝突率 < 1%（預期）
+   - 平均借書響應時間 < 200ms
+   - 併發借書處理能力 > 100 TPS
 
 ## 測試策略
 

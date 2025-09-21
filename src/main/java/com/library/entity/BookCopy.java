@@ -32,6 +32,9 @@ public class BookCopy {
     @Column(nullable = false)
     private Integer availableCopies;
 
+    @Version
+    private Long version;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private CopyStatus status;
