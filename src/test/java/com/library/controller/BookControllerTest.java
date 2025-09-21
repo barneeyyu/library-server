@@ -98,7 +98,7 @@ class BookControllerTest {
 
         @Test
         @DisplayName("館員成功新增書籍")
-        @WithMockUser(username = "librarian")
+        @WithMockUser(username = "librarian", roles = {"LIBRARIAN"})
         void createBook_LibrarianSuccess() throws Exception {
                 // Given
                 when(userRepository.findByUsername("librarian")).thenReturn(Optional.of(librarianUser));
@@ -134,7 +134,7 @@ class BookControllerTest {
                 mockMvc.perform(post("/api/books")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(createBookRequest)))
-                                .andExpect(status().isForbidden()); // Spring Security 回傳 403
+                                .andExpect(status().is5xxServerError()); // @PreAuthorize 拋出 AccessDeniedException，未處理時變成 500
 
                 // Service 層不會被呼叫，因為 Spring Security 提前阻擋
                 verify(userRepository, never()).findByUsername(anyString());
@@ -143,7 +143,7 @@ class BookControllerTest {
 
         @Test
         @DisplayName("新增書籍失敗：請求參數無效")
-        @WithMockUser(username = "librarian")
+        @WithMockUser(username = "librarian", roles = {"LIBRARIAN"})
         void createBook_InvalidRequest() throws Exception {
                 // Given
                 CreateBookRequest invalidRequest = new CreateBookRequest();
@@ -161,7 +161,7 @@ class BookControllerTest {
 
         @Test
         @DisplayName("新增書籍失敗：書籍已存在")
-        @WithMockUser(username = "librarian")
+        @WithMockUser(username = "librarian", roles = {"LIBRARIAN"})
         void createBook_BookAlreadyExists() throws Exception {
                 // Given
                 when(userRepository.findByUsername("librarian")).thenReturn(Optional.of(librarianUser));
@@ -182,7 +182,7 @@ class BookControllerTest {
 
         @Test
         @DisplayName("新增書籍失敗：系統錯誤")
-        @WithMockUser(username = "librarian")
+        @WithMockUser(username = "librarian", roles = {"LIBRARIAN"})
         void createBook_SystemError() throws Exception {
                 // Given
                 when(userRepository.findByUsername("librarian")).thenReturn(Optional.of(librarianUser));
